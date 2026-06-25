@@ -1,7 +1,6 @@
 ---
-description: Prune git worktrees whose branches have already been merged.
+description: Prune git worktrees
 ---
-
 Prune local git worktrees whose branches have already been merged into `main`.
 
 Required workflow:

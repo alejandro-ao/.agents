@@ -1,5 +1,5 @@
 ---
-description: Implement a feature in a dedicated git worktree and open a PR to the default branch.
+description: Implement a feature in a worktree and open a PR to the default branch.
 ---
 Implement the feature below in a **new git worktree**. The feature may be a description or an issue reference (issue ID or URL).
 

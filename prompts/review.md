@@ -1,5 +1,5 @@
 ---
-description: Review a pull request and produce a concise, precise quality report.
+description: Review a pull request
 ---
 Review the following pull request: {{ arguments }}
 
