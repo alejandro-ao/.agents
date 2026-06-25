@@ -3,7 +3,7 @@ description: Implement a feature in a dedicated git worktree and open a PR to th
 ---
 Implement the feature below in a **new git worktree**. The feature may be a description or an issue reference (issue ID or URL).
 
-Feature: {{ arguments }}
+Feature description or GitHub Issue: {{ arguments }}
 
 ## Worktree
 
