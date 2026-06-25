@@ -1,7 +1,6 @@
 ---
 description: Review a pull request and produce a concise, precise quality report.
 ---
-
 Review the following pull request: {{ arguments }}
 
 Required workflow:

@@ -1,7 +1,6 @@
 ---
 description: Open a new GH issue
 ---
-
 Open a new GitHub issue on the current repo about the following user-provided description:
 {{ arguments }}
 

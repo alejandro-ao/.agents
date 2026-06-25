@@ -1,22 +1,61 @@
 ---
-description: Implement a feature in a separate git worktree, then open a PR to main.
+description: Implement a feature in a dedicated git worktree and open a PR to the default branch.
 ---
+Implement the feature below in a **new git worktree**. The feature may be a description or an issue reference (issue ID or URL).
 
-You must implement this feature in a separate git worktree, not in the current working tree.
+Feature: {{ arguments }}
 
-Feature request:
-{{ feature }}
+## Worktree
 
-Required workflow:
+Create worktrees under:
+`~/.agents/worktrees/<repo-name>/<feature-slug>/`
 
-1. Inspect the current repository state and identify the current branch.
-2. Create a new git worktree from the latest `main`.
-3. Do all implementation, editing, testing, and commits inside that worktree.
-4. Do not modify the original working tree except for safe inspection commands.
-5. Run the relevant tests and checks before committing.
-6. Commit the changes with a clear message.
-7. Push the feature branch to the remote.
-8. Create a pull request targeting `main`.
-9. Report the worktree path, branch name, commit SHA, test results, and PR URL.
+Where:
+- `<repo-name>` = basename of the current repository.
+- `<feature-slug>` = short kebab-case description (e.g. `add-user-auth`).
 
-If GitHub CLI (`gh`) or remote access is unavailable, stop after committing and explain exactly what remains to create the PR.
+Example:
+`~/.agents/worktrees/my-app/add-user-auth/`
+
+Rules:
+- Never create a worktree inside or adjacent to the repository.
+- If the target directory already exists, choose another slug or ask the user.
+
+## Workflow
+
+1. Inspect the repository and determine:
+   - current branch
+   - remote
+   - default branch (`main` unless configured otherwise)
+2. Create a new worktree from the latest default branch. Use a branch name matching the slug, prefixed with feat/, fix/, or chore/.
+```bash
+git worktree add -b <branch> <worktree-path> origin/<default-branch>
+```
+3. Perform all edits, testing, and commits inside the worktree.
+4. Do not modify the original working tree except for read-only inspection (git status, git log, git remote -v, etc.).
+5. Run relevant tests, linters, and type checks.
+6. Make clear, atomic commits.
+7. Push the branch:
+
+git push -u origin <branch>
+
+8. Create a pull request targeting the default branch with gh pr create.
+
+Report
+
+Return:
+
+- worktree path
+- branch name
+- commit SHA(s)
+- test/check results
+- PR URL
+
+## Fallback
+
+If gh or remote access is unavailable, stop after pushing the branch and provide:
+
+- branch name
+- base branch
+- suggested PR title
+- suggested PR body
