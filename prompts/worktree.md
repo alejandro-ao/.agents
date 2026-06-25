@@ -40,6 +40,7 @@ git worktree add -b <branch> <worktree-path> origin/<default-branch>
 git push -u origin <branch>
 
 8. Create a pull request targeting the default branch with gh pr create.
+9. If you merge the PR from inside the feature worktree, do not leave that worktree checked out on the default branch. After merging, either remove the feature worktree or detach it from the merge commit before switching the original repository to the default branch, so the original working tree is not blocked by Git's one-branch-per-worktree rule.
 
 Report
 
