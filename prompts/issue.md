@@ -2,6 +2,7 @@
 description: Open a new GH issue
 ---
 Open a new GitHub issue on the current repo about the following user-provided description:
+
 {{ arguments }}
 
 The objective of the issue is to document the production process of this product and serve as starting point to a new PR. Make the body of the issue detailed and have it include hte following sections: 
