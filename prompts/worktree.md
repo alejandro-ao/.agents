@@ -39,8 +39,16 @@ git worktree add -b <branch> <worktree-path> origin/<default-branch>
 
 git push -u origin <branch>
 
-8. Create a pull request targeting the default branch with gh pr create.
-9. If you merge the PR from inside the feature worktree, do not leave that worktree checked out on the default branch. After merging, either remove the feature worktree or detach it from the merge commit before switching the original repository to the default branch, so the original working tree is not blocked by Git's one-branch-per-worktree rule.
+8. Create a pull request targeting the default branch with `gh pr create`.
+9. After opening or updating the PR, always check whether automated CI/status checks exist:
+   ```bash
+   gh pr checks <pr-number> --watch
+   ```
+   If checks fail, treat fixing them as part of the procedure. Inspect the failing logs,
+   make the required fixes in the feature worktree, run the equivalent local checks,
+   commit, push, and watch CI again until the PR checks pass or the failure is clearly
+   external/unfixable. Do not merely tell the user that the PR is open with failing CI.
+10. If you merge the PR from inside the feature worktree, do not leave that worktree checked out on the default branch. After merging, either remove the feature worktree or detach it from the merge commit before switching the original repository to the default branch, so the original working tree is not blocked by Git's one-branch-per-worktree rule.
 
 Report
 
@@ -51,6 +59,8 @@ Return:
 - commit SHA(s)
 - test/check results
 - PR URL
+- automated CI/status check results
+- any additional commits/fixes made specifically to resolve CI failures, or state that no CI fixes were needed
 
 ## Fallback
 
