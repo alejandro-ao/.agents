@@ -1,72 +1,17 @@
 ---
 description: Implement a feature in a worktree and open a PR to the default branch.
 ---
-Implement the feature below in a **new git worktree**. The feature may be a description or an issue reference (issue ID or URL).
+Implement this feature in a new git worktree and open a draft PR: {{ arguments }}
 
-Feature description or GitHub Issue: {{ arguments }}
-
-## Worktree
-
-Create worktrees under:
-`~/.agents/worktrees/<repo-name>/<feature-slug>/`
-
-Where:
-- `<repo-name>` = basename of the current repository.
-- `<feature-slug>` = short kebab-case description (e.g. `add-user-auth`).
-
-Example:
-`~/.agents/worktrees/my-app/add-user-auth/`
-
-Rules:
-- Never create a worktree inside or adjacent to the repository.
-- If the target directory already exists, choose another slug or ask the user.
-
-## Workflow
-
-1. Inspect the repository and determine:
-   - current branch
-   - remote
-   - default branch (`main` unless configured otherwise)
-2. Create a new worktree from the latest default branch. Use a branch name matching the slug, prefixed with feat/, fix/, or chore/.
-```bash
-git worktree add -b <branch> <worktree-path> origin/<default-branch>
-```
-3. Perform all edits, testing, and commits inside the worktree.
-4. Do not modify the original working tree except for read-only inspection (git status, git log, git remote -v, etc.).
-5. Run relevant tests, linters, and type checks.
-6. Make clear, atomic commits.
-7. Push the branch:
-
-git push -u origin <branch>
-
-8. Create a pull request targeting the default branch with `gh pr create`.
-9. After opening or updating the PR, always check whether automated CI/status checks exist:
-   ```bash
-   gh pr checks <pr-number> --watch
-   ```
-   If checks fail, treat fixing them as part of the procedure. Inspect the failing logs,
-   make the required fixes in the feature worktree, run the equivalent local checks,
-   commit, push, and watch CI again until the PR checks pass or the failure is clearly
-   external/unfixable. Do not merely tell the user that the PR is open with failing CI.
-10. If you merge the PR from inside the feature worktree, do not leave that worktree checked out on the default branch. After merging, either remove the feature worktree or detach it from the merge commit before switching the original repository to the default branch, so the original working tree is not blocked by Git's one-branch-per-worktree rule.
-
-Report
-
-Return:
-
-- worktree path
-- branch name
-- commit SHA(s)
-- test/check results
-- PR URL
-- automated CI/status check results
-- any additional commits/fixes made specifically to resolve CI failures, or state that no CI fixes were needed
-
-## Fallback
-
-If gh or remote access is unavailable, stop after pushing the branch and provide:
-
-- branch name
-- base branch
-- suggested PR title
-- suggested PR body
+- Inspect the current branch, remotes, default branch, and status read-only. Never modify the original working tree or discard unrelated work.
+- Fetch the latest default branch. Create `~/.agents/worktrees/<repo-name>/<short-kebab-slug>/` (choose another slug if it exists) on `feat/<slug>`, `fix/<slug>`, or `chore/<slug>`:
+  ```bash
+  git worktree add -b <branch> <path> origin/<default-branch>
+  ```
+- Do all edits, dependency work, tests, commits, and PR operations inside the feature worktree. Follow repository instructions and keep commits atomic.
+- Run project/CI-equivalent tests, lint, format, type checks, and builds before the PR (for uv projects: `uv run pytest`, `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy`). Report anything that cannot run.
+- Push with `git push -u origin <branch>`, then create a draft PR to the default branch using `gh pr create --draft` and a Markdown body file.
+- Run `gh pr checks <number> --watch`. Treat failures as part of the task: inspect logs, fix in the worktree, rerun local equivalents, commit, push, and watch again until passing or clearly external/unfixable.
+- If GitHub access is unavailable, stop after pushing and provide branch/base plus a suggested PR title/body.
+- If merging from this worktree, remove it or detach it from the merge commit before checking out the default branch elsewhere.
+- Report worktree, branch, commit SHA(s), local checks, PR URL, CI results, and any CI-specific fixes (or none).
