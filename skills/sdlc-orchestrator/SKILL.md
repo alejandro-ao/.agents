@@ -75,6 +75,80 @@ discovered → enriched → scored
 
 Record timestamp, actor, score/evidence, and next action for each transition.
 
+## Specialist delegation (mandatory)
+
+The orchestrator coordinates specialists; it must not impersonate them. In
+particular, the agent that implements a change must never review its own work.
+A separate worktree alone is filesystem isolation, not an independent agent
+context.
+
+Use this runtime order for every implementation and review assignment:
+
+1. If the active tool set includes a native subagent/delegation tool, use it to
+   launch a fresh agent context. Give implementation agents the `worktree` skill
+   and review agents the `review` skill.
+2. Otherwise, if both `tmux` and `tau` are available, launch a fresh Tau print-mode
+   session in a uniquely named detached tmux session.
+3. If neither method is available, mark the run `blocked`. Do not perform the
+   specialist's work in the orchestrator context and do not describe a detached
+   worktree as an independent review.
+
+Each specialist prompt must be self-contained: identify the repository, issue or
+PR, accepted scope, project brief, acceptance criteria, constraints, required
+checks, output schema, and run-artifact path. Explicitly invoke the relevant
+skill, for example:
+
+```text
+/skill:worktree Implement issue #123 from this bounded brief: ...
+```
+
+```text
+/skill:review Review PR #456 against issue #123 and this bounded brief: ...
+```
+
+For native delegation, record the tool call ID, child/session ID when available,
+runtime, prompt artifact, and final report. Do not reuse an implementation child
+as a reviewer.
+
+### Tmux fallback
+
+Use artifact files rather than relying only on tmux scrollback. Create a prompt
+file and a wrapper under the run directory; the wrapper starts a new Tau session,
+writes its transcript and exit status, and then exits. A representative wrapper
+is:
+
+```bash
+#!/usr/bin/env bash
+set +e
+TAU_NO_UPDATE_CHECK=1 tau --print --new-session --cwd "$SPECIALIST_CWD" \
+  "$(cat "$PROMPT_FILE")" >"$TRANSCRIPT_FILE" 2>&1
+code=$?
+printf '%s\n' "$code" >"$STATUS_FILE"
+exit "$code"
+```
+
+Launch it with a collision-resistant name such as
+`tau-<run-id>-implement-<n>` or `tau-<run-id>-review-<n>`:
+
+```bash
+tmux new-session -d -s "$TMUX_SESSION" "bash '$WRAPPER_FILE'"
+```
+
+Poll at a bounded interval until the status file appears or the configured
+issue timeout expires. While it runs, use `tmux has-session` and optionally
+`tmux capture-pane -p -t "$TMUX_SESSION"` for progress; do not send keystrokes
+or treat partial output as completion. On completion, read the transcript and
+status file, validate the requested report, and record the Tau session ID if it
+can be recovered. A missing tmux session without a status file is a specialist
+failure. On timeout, capture the final pane, terminate only that named tmux
+session, preserve all artifacts, and mark the assignment `failed` or `blocked`.
+Never use `tmux kill-server`.
+
+Before review, prove independence in the run record: distinct agent/session ID,
+distinct tmux session when using the fallback, reviewer start after the candidate
+commit/PR exists, and no reuse of the implementer's conversation. If this evidence
+is absent, the review is not independent and cannot advance the run.
+
 ## 1. Establish the run
 
 Create a run ID and configuration snapshot. Verify the repository and default
@@ -149,10 +223,13 @@ scores to fill capacity. Mark other issues `below_threshold`, `excluded`, or
 
 ## 3. Implement in isolation
 
-For each selected issue, create exactly one approved worktree and branch.
-Delegate a self-contained brief containing accepted scope, objective acceptance
-criteria, project constraints, paths, required checks, and prohibitions on
-unrelated refactors or destructive actions.
+For each selected issue, delegate to a fresh implementation agent according to
+**Specialist delegation**. The prompt must invoke the `worktree` skill, which
+creates exactly one approved worktree and branch and opens the draft PR. Give it
+a self-contained brief containing accepted scope, objective acceptance criteria,
+project constraints, paths, required checks, and prohibitions on unrelated
+refactors or destructive actions. The orchestrator may verify and inspect the
+result, but must not make the implementation edits itself.
 
 Require this report:
 
@@ -183,8 +260,11 @@ summary, check results, and known risks. Never claim an unrun check passed.
 
 ## 5. Review independently
 
-Use a fresh reviewer context with the issue, accepted scope, project brief,
-diff, tests, and verification evidence. Require:
+Delegate to a fresh reviewer agent according to **Specialist delegation** and
+explicitly invoke the `review` skill. Give it the issue, accepted scope, project
+brief, PR, candidate commit, diff, tests, and verification evidence. The reviewer
+must not share the implementer's agent/session context. The orchestrator must not
+supply its own review verdict. Require:
 
 ```yaml
 verdict: approved | findings | blocked
