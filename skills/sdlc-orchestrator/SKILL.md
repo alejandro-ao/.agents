@@ -82,16 +82,25 @@ particular, the agent that implements a change must never review its own work.
 A separate worktree alone is filesystem isolation, not an independent agent
 context.
 
-Use this runtime order for every implementation and review assignment:
+Use this runtime order for every implementation, revision, review, and
+re-review assignment:
 
 1. If the active tool set includes a native subagent/delegation tool, use it to
-   launch a fresh agent context. Give implementation agents the `worktree` skill
-   and review agents the `review` skill.
+   launch a fresh agent context. Give implementation and revision agents the
+   `worktree` skill and review and re-review agents the `review` skill.
 2. Otherwise, if both `tmux` and `tau` are available, launch a fresh Tau print-mode
    session in a uniquely named detached tmux session.
 3. If neither method is available, mark the run `blocked`. Do not perform the
    specialist's work in the orchestrator context and do not describe a detached
    worktree as an independent review.
+
+Before launch, verify that the required specialist skill resolves from the
+specialist's working directory. For private skills that should not be committed
+with the repository, prefer user-level installation under
+`~/.agents/skills/<name>/SKILL.md` or `~/.tau/skills/<name>/SKILL.md` so every
+worktree can load the same skill. Do not rely on untracked project-local skills:
+a Git worktree contains only files from its commit. If the required skill cannot
+be resolved, block the assignment rather than running without it.
 
 Each specialist prompt must be self-contained: identify the repository, issue or
 PR, accepted scope, project brief, acceptance criteria, constraints, required
@@ -108,24 +117,44 @@ skill, for example:
 
 For native delegation, record the tool call ID, child/session ID when available,
 runtime, prompt artifact, and final report. Do not reuse an implementation child
-as a reviewer.
+as a reviewer. Consume the specialist's structured report by default; preserve
+raw process output and the durable child session for diagnosis, but do not load a
+full child transcript into the orchestrator context unless the assignment fails,
+the report is missing or invalid, evidence conflicts, or a human requests it.
 
 ### Tmux fallback
 
-Use artifact files rather than relying only on tmux scrollback. Create a prompt
-file and a wrapper under the run directory; the wrapper starts a new Tau session,
-writes its transcript and exit status, and then exits. A representative wrapper
-is:
+Use artifact files rather than relying only on tmux scrollback. Before launch,
+generate a unique, file-safe Tau session ID (letters, numbers, `.`, `_`, and `-`;
+maximum 128 bytes), record it in the run state, and pass it through Tau's
+`--session-id` option. Tau atomically rejects collisions. Create a prompt file and
+a wrapper under the run directory; the wrapper starts that exact new Tau
+print-mode session, writes process output and exit status, and then exits. A
+representative wrapper is:
 
 ```bash
 #!/usr/bin/env bash
 set +e
-TAU_NO_UPDATE_CHECK=1 tau --print --new-session --cwd "$SPECIALIST_CWD" \
-  "$(cat "$PROMPT_FILE")" >"$TRANSCRIPT_FILE" 2>&1
+TAU_NO_UPDATE_CHECK=1 tau --print --new-session \
+  --session-id "$SPECIALIST_SESSION_ID" \
+  --cwd "$SPECIALIST_CWD" \
+  "$(cat "$PROMPT_FILE")" >"$OUTPUT_FILE" 2>&1
 code=$?
 printf '%s\n' "$code" >"$STATUS_FILE"
 exit "$code"
 ```
+
+Generate `SPECIALIST_SESSION_ID` in the orchestrator, not inside the detached
+wrapper, so the expected child ID is durable even when startup fails. Use a
+collision-resistant value tied to the run and assignment, for example
+`tau-<run-id>-implement-<n>-<random-suffix>`.
+
+When launching multiple Tau fallback workers whose CWDs map to the same session
+index, serialize session initialization: launch one worker, wait until its exact
+session JSONL and index record both exist and the index parses successfully, then
+launch the next. Their agent work may overlap after registration. Treat malformed
+or missing index evidence as a startup failure; do not launch another worker into
+that session namespace until it is reconciled.
 
 Launch it with a collision-resistant name such as
 `tau-<run-id>-implement-<n>` or `tau-<run-id>-review-<n>`:
@@ -137,12 +166,13 @@ tmux new-session -d -s "$TMUX_SESSION" "bash '$WRAPPER_FILE'"
 Poll at a bounded interval until the status file appears or the configured
 issue timeout expires. While it runs, use `tmux has-session` and optionally
 `tmux capture-pane -p -t "$TMUX_SESSION"` for progress; do not send keystrokes
-or treat partial output as completion. On completion, read the transcript and
-status file, validate the requested report, and record the Tau session ID if it
-can be recovered. A missing tmux session without a status file is a specialist
-failure. On timeout, capture the final pane, terminate only that named tmux
-session, preserve all artifacts, and mark the assignment `failed` or `blocked`.
-Never use `tmux kill-server`.
+or treat partial output as completion. On completion, read the status file and
+structured report, validate the report, and confirm the recorded Tau session ID
+matches the assignment. Read raw process output or session JSONL only under the
+diagnostic conditions above. A missing tmux session without a status file is a
+specialist failure. On timeout, capture the final pane, terminate only that named
+tmux session, preserve all artifacts, and mark the assignment `failed` or
+`blocked`. Never use `tmux kill-server`.
 
 Before review, prove independence in the run record: distinct agent/session ID,
 distinct tmux session when using the fallback, reviewer start after the candidate
@@ -254,9 +284,11 @@ Run configured checks in the issue worktree and capture commands, exit codes,
 and concise output. Inspect the diff for scope creep, secrets, generated clutter,
 lockfile churn, missing tests, and conflicts with the project brief.
 
-Failed verification returns to the implementer as `revising`. Once verification
-passes, create or update a draft PR containing scope, score, implementation
-summary, check results, and known risks. Never claim an unrun check passed.
+Failed verification moves the issue to `revising` and is delegated as a fresh
+revision assignment to the implementation role; the orchestrator must not make
+the edits itself. Once verification passes, create or update a draft PR
+containing scope, score, implementation summary, check results, and known risks.
+Never claim an unrun check passed.
 
 ## 5. Review independently
 
@@ -277,9 +309,10 @@ findings:
 remaining_risks: [<risks>]
 ```
 
-Blocking and important findings return to implementation, followed by full
-verification and another independent review. Stop and mark `blocked` after
-`max_review_fix_cycles`; never retry indefinitely.
+Blocking and important findings return to implementation through a fresh
+revision assignment, followed by full verification and a fresh independent
+re-review assignment. Stop and mark `blocked` after `max_review_fix_cycles`;
+never retry indefinitely.
 
 ## 6. Mandatory human merge approval
 
@@ -311,7 +344,47 @@ Retry only idempotent reads and safe writes. Preserve worktrees and artifacts on
 timeout or runtime failure. Reconcile remote state before retrying GitHub writes.
 Pause on repository conflicts or newly discovered ambiguity/sensitivity.
 
+Record every human override with timestamp, actor, exact instruction, affected
+stage or policy, and resulting risk. Repeat overrides in the final summary. A
+human override never constitutes merge approval unless it explicitly names the
+specific PR and approves its merge.
+
 Final reports must group work into selected/in progress, awaiting human merge
 approval, below threshold, excluded, blocked, and failed. State what completed,
 what evidence supports it, what needs a decision, and what happens next. Do not
-include raw agent transcripts unless requested.
+include or ingest raw agent transcripts unless requested or needed under the
+diagnostic conditions above.
+
+End every run with a concise execution summary that includes:
+
+- a plain-language description of the feature or fix and its user-visible result;
+- the delivered branch, candidate commit, worktree, and PR when available;
+- verification and final review outcome;
+- specialist rounds by role, separating initial implementation from revisions
+  and initial review from re-reviews;
+- each specialist assignment's role, ordinal, session/child ID, and outcome;
+- failed pre-agent launch attempts and safe retries, reported separately so they
+  are not counted as completed specialist rounds;
+- the terminal workflow state, remaining risks, human overrides, and next action.
+
+Count one specialist round for each fresh assignment that reached an agent turn.
+For example, one initial implementation plus two revisions is three
+implementation rounds; one initial review plus two re-reviews is three review
+rounds. A CLI/resource failure before the first agent turn is a launch attempt,
+not a specialist round.
+
+Use this compact shape:
+
+```markdown
+## Execution summary
+- Feature/fix: <plain-language description and result>
+- Delivery: <branch, commit, worktree, and PR or none>
+- Verification/review: <concise outcomes>
+- Specialist rounds: triage <n>; implementation <n> (initial <n>, revisions <n>);
+  review <n> (initial <n>, re-reviews <n>)
+- Assignments: <role/ordinal → session or child ID → outcome>
+- Launch failures/retries: <count and concise explanation or none>
+- Overrides: <items or none>
+- Final state: <state>; next action: <action>
+- Remaining risks: <items or none>
+```
