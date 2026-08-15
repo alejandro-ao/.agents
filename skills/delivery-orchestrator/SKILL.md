@@ -19,15 +19,17 @@ to a human if this gate fails. Do not silently broaden scope.
 
 1. Create durable run evidence outside the implementation worktree and initialize
    machine-managed JSON state with `scripts/transition-state.mjs`.
-2. Launch a fresh implementation specialist using `templates/implement.md`.
+2. Launch a fresh implementation specialist using this skill's
+   `templates/implement.md`.
 3. Verify the branch, candidate commit, draft PR, required checks, and cumulative
    diff independently.
 4. Launch a fresh independent reviewer in a fresh detached review worktree using
-   `templates/review.md`.
+   this skill's `templates/review.md`.
 5. For blocking or important findings, launch a fresh revision specialist in the
-   existing implementation worktree using `templates/revise.md`, then repeat full
-   verification and review. Respect the approved review-cycle limit.
-6. Produce the owner report using `templates/final-report.md`.
+   existing implementation worktree using this skill's `templates/revise.md`,
+   then repeat full verification and review. Respect the approved review-cycle
+   limit.
+6. Produce the owner report using this skill's `templates/final-report.md`.
 
 ## Machine-managed run state
 

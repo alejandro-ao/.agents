@@ -1,6 +1,6 @@
 ---
 name: portfolio-orchestrator
-description: Run a scheduled portfolio intake: discover and rank candidate issues, select safe work within approved limits, and dispatch approved issues to delivery-orchestrator. Use for daily backlog triage or automated issue handoff.
+description: Run a scheduled portfolio workflow: discover and rank issues, select safe work, dispatch approved issues to delivery-orchestrator, collect validated outcomes, and produce a daily owner digest. Use for daily backlog triage and SDLC orchestration.
 ---
 
 # Portfolio Orchestrator
@@ -17,6 +17,7 @@ Do not implement code, review pull requests, or merge. Dispatch selected issues 
 4. Select only issues that pass every hard gate, meet the threshold, and fit the
    concurrency, budget, and repository-conflict limits.
 5. Launch one independent `delivery-orchestrator` run per selected issue.
+6. Collect validated delivery outcomes and publish the daily owner digest.
 
 ## Required setup
 
@@ -72,14 +73,36 @@ project brief, evidence-backed score and risk, related work, required checks,
 draft-PR-only policy, review-cycle limit, and run/locking context.
 
 For every deferred issue, write the hard-gate reason or the smallest human
-decision needed. `portfolio-reporting` consumes these records with delivery-run
-outcomes to create the owner digest; do not generate the digest here.
+decision needed.
+
+## Daily owner digest
+
+After collecting validated delivery-run reports and current PR state, write one
+timestamped Markdown digest in the portfolio run directory. Lead with decisions,
+use product-owner language, and organize it into:
+
+1. **Ready for explicit merge approval** — draft PRs with passing configured
+   checks and no blocking or important independent-review findings.
+2. **Low-risk, easy-to-validate PRs** — only when evidence supports narrow
+   scope, low risk, passing checks, and clear manual-validation steps.
+3. **Work in progress** — issue, last verified result, current stage, and next
+   action.
+4. **Needs your decision** — the smallest product, scope, risk, or policy
+   decision that prevents progress.
+5. **Deferred at triage** — the evidence-backed hard-gate reason.
+6. **Promising next candidates** — high-scoring, low-risk unselected work.
+7. **Operational exceptions** — timeouts, failures, budget limits, missing
+   evidence, stale PR state, and repository conflicts.
+
+Link each item to its issue, run, and PR when present. Never infer a ready state
+from worker prose. State that a PR remains unmerged unless an explicit human
+approval naming that PR and a verified merge record exist.
 
 ## Durable evidence
 
 Maintain one run directory outside any implementation worktree containing the
 accepted configuration and brief, issue snapshots, triage reports, selection
-decisions, dispatch records, and transition log.
+decisions, dispatch records, delivery summaries, transition log, and daily digest.
 Preserve evidence on failure. Do not infer completion from a worker's prose: use
 its validated report or recorded terminal state.
 
