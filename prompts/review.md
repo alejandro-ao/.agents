@@ -13,6 +13,21 @@ Review this pull request in an isolated worktree: {{ arguments }}
   Use the discovered equivalent ref for forks/non-GitHub remotes.
 - Perform all checkout, diff inspection, temporary work, and validation inside that worktree. Do not change code unless explicitly asked.
 - Review against the PR base for correctness, regressions, edge cases, error handling, security/data loss, performance, compatibility/migrations, tests, docs, complexity, and style.
-- Run reasonable targeted project-native tests, lint, type checks, or builds; avoid destructive or unusually expensive commands. Record exact commands/results and state limitations.
-- Report: worktree; PR metadata; verdict (approve / comments / request changes); concise risk summary; prioritized findings with file/line, impact, and concrete fix; validation; assumptions; and `git worktree remove <path>` cleanup command.
-- Do not remove the worktree automatically. Keep the report concise and focus on merge-relevant issues.
+
+## Report
+
+Provide:
+
+- Verdict: approve, comments, or request changes
+- Link to the PR
+- Short summary of what the PR solves or implements and how it does it.
+- Worktree path
+- PR metadata
+- Concise risk summary
+- Prioritized findings with file/line, impact, and concrete fix
+- Validation commands/results
+- A concise, PR-specific manual validation procedure, including setup, actions, and expected results
+- assumptions and limitations
+- Cleanup command: `git worktree remove <path>`
+
+Do not remove the worktree automatically. If there are no findings, say so explicitly and mention residual testing gaps.
