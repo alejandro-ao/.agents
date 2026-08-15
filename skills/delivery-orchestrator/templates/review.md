@@ -1,10 +1,10 @@
 # Independent review assignment template
 
-Use for initial review and re-review. Launch each round in a fresh agent session
-and a fresh detached review worktree. Replace every `{{...}}` value.
+Use for initial review and re-review. Launch each round in a fresh independent
+review specialist subagent session and a fresh detached review worktree. Replace every `{{...}}` value.
 
 ```text
-You are independent review specialist {{review_ordinal}} for delivery run {{run_id}}.
+You are independent review specialist subagent {{review_ordinal}} for delivery run {{run_id}}.
 You did not implement or revise this change and must return an evidence-based
 verdict rather than making edits.
 

@@ -1,113 +1,64 @@
 ---
 name: portfolio-orchestrator
-description: Run a scheduled portfolio workflow: discover and rank issues, select safe work, dispatch approved issues to delivery-orchestrator, collect validated outcomes, and produce a daily owner digest. Use for daily backlog triage and SDLC orchestration.
+description: Run a portfolio workflow -- triage candidate issues, select safe work, hand approved issues to delivery-orchestrator, collect validated outcomes, and write an owner digest.
 ---
 
 # Portfolio Orchestrator
 
-Own the portfolio-level decision: **which issues should enter delivery today?**
-Do not implement code, review pull requests, or merge. Dispatch selected issues to
-`delivery-orchestrator`, which owns each issue's isolated delivery lifecycle.
+## What this does
 
-## Responsibilities
+This is the entry point for a workflow that validates all open issues and PRs in the current repository, and then implements the accepted ones by delegating to `delivery-orchestrator` subagents. 
 
-1. Discover candidate issues and existing delivery runs for the target repository.
-2. Apply the accepted project brief and selection policy consistently across the backlog.
-3. Delegate evidence-based triage in fresh, read-only specialist sessions.
-4. Select only issues that pass every hard gate, meet the threshold, and fit the
-   concurrency, budget, and repository-conflict limits.
-5. Launch one independent `delivery-orchestrator` run per selected issue.
-6. Collect validated delivery outcomes and publish the daily owner digest.
+The first step of the workflowis to decide **what to work on**, and then delegates the work to `delivery-orchestrator` subagents; it never writes code or merges pull requests.
 
-## Required setup
+```text
+candidate issues → triage → select or defer → delivery runs → daily digest
+```
 
-Derive repository facts, default branch, instructions, available checks, active
-worktrees, open PRs, and active runs. Ask once for any missing material decision:
+`delivery-orchestrator` owns the execution of every selected issue.
 
-- repository and issue scope/backlog;
-- accepted project brief and non-goals;
-- selection policy, including score threshold and maximum concurrent deliveries;
-- daily budget and whether automatic dispatch is permitted;
-- digest destination and cadence.
+## Before starting
 
-The default is conservative: select at most one low-risk issue, create draft PRs
-only, and never merge, close issues, relabel issues, or publish issue comments.
+Derive the repository, default branch, instructions, checks, open PRs, open issues, active
+worktrees, and active runs. Ask once for any missing material choice:
 
-## Hard gates
+- candidate issue scope and accepted project brief;
+- selection threshold, concurrency limit, and daily budget;
+- permission to dispatch and digest cadence.
 
-Reject or defer an issue when it is duplicate/actively worked, outside the brief,
-unclear or untestable, blocked by a product decision, conflicts with repository
-policy, or touches security, authentication, billing, destructive migration,
-production infrastructure, privacy, or legal work. Those sensitive categories
-always require a human decision.
+Default policy: one low-risk issue, draft PRs only, and no merge, issue comments,
 
-## Selection
+## Workflow
 
-For each eligible candidate, calculate the weighted score mechanically:
+1. **Triage each candidate** using `templates/triage.md` in a fresh, read-only
+   specialist subagent session. Require its JSON report.
+2. **Defer** duplicates, active work, unclear/untestable work, misalignment,
+   unresolved product decisions, policy conflicts, and sensitive work. Security,
+   authentication, billing, destructive migration, production infrastructure,
+   privacy, and legal work always need a human decision.
+3. **Select** only issues that pass every gate, meet the threshold, and fit the
+   approved concurrency and budget. Rank by score, user value, lower risk, then
+   lower effort. Never select work merely to fill capacity.
+4. **Write `handoff.json`** with `templates/handoff.md`, validate it, then start
+   one `delivery-orchestrator` run per selected issue.
+5. **Collect evidence** from validated delivery reports and current PR state.
+6. **Write the digest** with `templates/daily-digest.md`.
 
-`project fit`, `user value`, `clarity`, `confidence`, `risk safety`, and
-`effort efficiency`.
+## Inputs and outputs
 
-Rank by score, then user value, lower risk, and lower effort. Never select work
-just to fill capacity. Record the evidence and exact decision for every candidate.
+| Input | Output |
+|---|---|
+| Issue, project brief, policy, repository evidence | Per-issue triage report |
+| Validated selected triage report | `handoff.json` for delivery |
+| Delivery, verification, review, and PR evidence | Timestamped daily digest |
 
-## Dispatch contract
+Keep all artifacts in a portfolio run directory: accepted configuration and
+brief, issue snapshots, triage reports, handoffs, delivery summaries, transition
+log, and digest. Retry only safe discovery. On missing evidence, ambiguity,
+conflict, or sensitivity, defer and state the smallest needed human decision.
 
-Pass every selected issue to `delivery-orchestrator` with:
+## When a PR is “ready”
 
-- approved issue snapshot, scope, acceptance criteria, and project brief;
-- triage evidence, score, risk, and related-work findings;
-- required checks, draft-PR-only policy, and review-cycle limit;
-- run/artifact location and concurrency/locking context.
-
-The delivery orchestrator may perform only a lightweight start gate: verify that
-the issue remains unclaimed, scope is unchanged, criteria are still testable, and
-no newly discovered sensitive area or conflict exists. It must not re-score the
-backlog or override portfolio selection.
-
-## Handoff outcome
-
-For every selected issue, write a compact, validated handoff record before
-dispatching. Include the issue snapshot, approved scope and acceptance criteria,
-project brief, evidence-backed score and risk, related work, required checks,
-draft-PR-only policy, review-cycle limit, and run/locking context.
-
-For every deferred issue, write the hard-gate reason or the smallest human
-decision needed.
-
-## Daily owner digest
-
-After collecting validated delivery-run reports and current PR state, write one
-timestamped Markdown digest in the portfolio run directory. Lead with decisions,
-use product-owner language, and organize it into:
-
-1. **Ready for explicit merge approval** — draft PRs with passing configured
-   checks and no blocking or important independent-review findings.
-2. **Low-risk, easy-to-validate PRs** — only when evidence supports narrow
-   scope, low risk, passing checks, and clear manual-validation steps.
-3. **Work in progress** — issue, last verified result, current stage, and next
-   action.
-4. **Needs your decision** — the smallest product, scope, risk, or policy
-   decision that prevents progress.
-5. **Deferred at triage** — the evidence-backed hard-gate reason.
-6. **Promising next candidates** — high-scoring, low-risk unselected work.
-7. **Operational exceptions** — timeouts, failures, budget limits, missing
-   evidence, stale PR state, and repository conflicts.
-
-Link each item to its issue, run, and PR when present. Never infer a ready state
-from worker prose. State that a PR remains unmerged unless an explicit human
-approval naming that PR and a verified merge record exist.
-
-## Durable evidence
-
-Maintain one run directory outside any implementation worktree containing the
-accepted configuration and brief, issue snapshots, triage reports, selection
-decisions, dispatch records, delivery summaries, transition log, and daily digest.
-Preserve evidence on failure. Do not infer completion from a worker's prose: use
-its validated report or recorded terminal state.
-
-## Failure policy
-
-Retry only safe, idempotent discovery. Reconcile repository and remote state
-before retrying a dispatch. On ambiguity, conflict, sensitivity, or missing
-evidence, defer the issue and state the exact human decision needed.
+Only call a PR ready for explicit merge approval when its configured checks pass
+and independent review has no blocking or important findings. It remains
+unmerged unless a named human approval and verified merge record exist.

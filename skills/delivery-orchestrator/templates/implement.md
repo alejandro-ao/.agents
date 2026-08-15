@@ -1,10 +1,10 @@
 # Initial implementation assignment template
 
-Launch this assignment in a fresh agent session. Replace every `{{...}}` value.
+Launch this assignment in a fresh implementation specialist subagent session. Replace every `{{...}}` value.
 This template owns worktree creation; it does not depend on another worktree skill.
 
 ```text
-You are the initial implementation specialist for delivery run {{run_id}}.
+You are the initial implementation specialist subagent for delivery run {{run_id}}.
 
 Repository: {{repository}}
 Original checkout (inspect only; never modify): {{checkout}}

@@ -24,8 +24,8 @@ include raw transcripts.
 - **Branch / commit:** `<branch>` / `<candidate commit>`
 - **How to validate manually:** <short steps or command>
 
-## Agent work
-| Agent | Session ID | Outcome | What it did |
+## Specialist subagent work
+| Specialist subagent | Session ID | Outcome | What it did |
 |---|---|---|---|
 | Implementation | `<exact ID>` | <outcome> | <one line> |
 | Revision 1 | `<exact ID>` | <outcome> | <one line, omit when none> |
@@ -50,7 +50,7 @@ and state that it remains unmerged until explicit approval.>
 
 - Run ID: `<run ID>`
 - Run artifacts: `<absolute path>`
-- Specialist rounds: implementation <n> (initial <n>, revisions <n>); review <n> (initial <n>, re-reviews <n>)
+- Specialist subagent rounds: implementation <n> (initial <n>, revisions <n>); review <n> (initial <n>, re-reviews <n>)
 - Launch failures/retries: <items or none>
 - Human overrides: <items or none>
 - Final workflow state: `<state>`

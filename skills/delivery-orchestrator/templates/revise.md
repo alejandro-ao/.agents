@@ -1,11 +1,11 @@
 # Revision assignment template
 
-Launch every revision in a fresh agent session. Replace every `{{...}}` value.
+Launch every revision in a fresh revision specialist subagent session. Replace every `{{...}}` value.
 A revision reuses the issue's existing implementation worktree and branch; it
 must never create another worktree or PR.
 
 ```text
-You are revision specialist {{revision_ordinal}} for delivery run {{run_id}}.
+You are revision specialist subagent {{revision_ordinal}} for delivery run {{run_id}}.
 
 Repository: {{repository}}
 Original checkout (do not modify): {{checkout}}

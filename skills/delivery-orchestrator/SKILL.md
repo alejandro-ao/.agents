@@ -1,85 +1,79 @@
 ---
 name: delivery-orchestrator
-description: Deliver an already-approved issue through an isolated worktree, verification, independent review, revision, and a draft pull request. Use only after portfolio-level selection or explicit human approval of the issue.
+description: Deliver one already-approved issue through an isolated worktree, verification, independent review, revision, and a draft pull request.
 ---
 
 # Delivery Orchestrator
 
-Own one approved issue from safe start through a reviewed draft PR. Do not perform
-portfolio scoring or backlog prioritization; rely on the supplied approved scope.
+## What this does
+
+This skill owns **one approved issue**. It accepts a validated `handoff.json`
+from `portfolio-orchestrator`, creates a draft PR, and stops for human merge
+approval. It does not re-rank backlog issues or merge.
+
+```text
+approved handoff → implement → verify → independent review
+                                      ↘ revise → verify → review
+                                              → await approval → stop
+```
 
 ## Start gate
 
-Before delegating implementation, confirm the issue is still unclaimed, accepted
-scope and criteria are unchanged and testable, repository instructions and checks
-are available, and there is no newly discovered conflict or sensitive area. Defer
-to a human if this gate fails. Do not silently broaden scope.
+Before implementation, confirm the issue is still unclaimed, scope and
+acceptance criteria are unchanged and testable, instructions and checks are
+available, and no newly discovered conflict or sensitive area exists. Otherwise
+block for a human decision; never silently broaden scope.
 
 ## Workflow
 
-1. Create durable run evidence outside the implementation worktree and initialize
-   machine-managed JSON state with `scripts/transition-state.mjs`.
-2. Launch a fresh implementation specialist using this skill's
-   `templates/implement.md`.
-3. Verify the branch, candidate commit, draft PR, required checks, and cumulative
-   diff independently.
-4. Launch a fresh independent reviewer in a fresh detached review worktree using
-   this skill's `templates/review.md`.
-5. For blocking or important findings, launch a fresh revision specialist in the
-   existing implementation worktree using this skill's `templates/revise.md`,
-   then repeat full verification and review. Respect the approved review-cycle
-   limit.
-6. Produce the owner report using this skill's `templates/final-report.md`.
+1. Initialize the run state and artifacts.
+2. Launch a fresh implementation specialist subagent with `templates/implement.md`.
+3. Independently verify the result with `templates/verify.md`.
+4. Launch a fresh independent review specialist subagent with
+   `templates/review.md` in a new detached review worktree.
+5. If verification or review finds a material issue, launch a fresh revision
+   specialist subagent with `templates/revise.md` in the existing implementation
+   worktree, then repeat verification and review.
+6. Produce `final-report.md` with `templates/final-report.md`.
 
-## Machine-managed run state
-
-Create a collision-resistant run directory outside the implementation worktree:
+## Required artifacts
 
 ```text
 <run>/
-  config.json             immutable approved issue, scope, policy, and checks
-  state.json              current validated workflow state
-  transitions.jsonl       append-only state-transition audit trail
-  assignments.jsonl       specialist launches and terminal outcomes
-  prompts/                rendered specialist assignments
-  reports/                validated specialist JSON reports
-  verification/           commands, exit codes, and concise output
-  final-report.md
+  config.json             approved handoff, scope, policy, and checks
+  state.json              current workflow state
+  transitions.jsonl       append-only transition history
+  assignments.jsonl       specialist subagent launches and outcomes
+  prompts/ reports/ verification/ final-report.md
 ```
 
-`config.json` is written once after the start gate. Never use an interactive
-editor to alter `state.json` or `transitions.jsonl`. Initialize and transition
-state only through this skill's state script:
+Use `scripts/transition-state.mjs`—never an editor—to initialize or change
+`state.json`. The script validates JSON, enforces transitions, atomically writes
+the new state, and appends its audit record.
 
-```text
-node scripts/transition-state.mjs init --run-dir <run> --run-id <id> --issue <issue> --actor <actor> --next-action <action>
-node scripts/transition-state.mjs transition --run-dir <run> --to <state> --actor <actor> --decision <reason> --next-action <action> [--evidence <path-or-url>]
-```
+## State transitions
 
-The script validates the existing JSON, enforces allowed transitions, atomically
-replaces `state.json`, and appends a matching JSON record to
-`transitions.jsonl`. Stop and reconcile if either artifact is missing, malformed,
-or inconsistent; do not repair state by hand.
+| Event | Transition | Evidence |
+|---|---|---|
+| Start gate passes | `approved → implementing` | handoff |
+| Implementation validates | `implementing → verifying` | implementation report |
+| Verification passes | `verifying → reviewing` | verification report |
+| Verification/review fails | `verifying/reviewing → revising` | relevant report |
+| Revision validates | `revising → verifying` | revision report |
+| Review approves | `reviewing → awaiting_final_approval` | review report |
+| Human declines merge | `awaiting_final_approval → completed_unmerged` | final report |
 
-## Non-negotiable safeguards
+`blocked`, `failed`, and `cancelled` are terminal exits from active stages.
+`merged` requires explicit approval naming the specific PR.
+
+## Non-negotiable rules
 
 - One issue gets one implementation branch and worktree.
-- Implementers never review their own work.
-- Every review session and review worktree is fresh and independent.
-- Revision reuses the existing implementation worktree and PR branch.
-- Validate specialist reports before transitioning state; preserve run evidence.
-- Never merge, close an issue, post issue comments, or create non-draft PRs
-  without the applicable explicit policy and named human approval.
-
-## Outcome states
-
-`approved → implementing → verifying → reviewing → revising → verifying`
-
-After an approved review: `awaiting_final_approval → completed_unmerged`.
-`blocked`, `failed`, and `cancelled` are valid terminal exits from any active
-stage. `merged` requires an explicit human approval that names the specific PR.
-
-Terminal outcomes are `completed_unmerged`, `blocked`, `failed`, or `cancelled`.
-A PR is ready only after configured verification passes and no blocking or
-important independent-review findings remain. It stays unmerged until a human
-explicitly approves that specific PR.
+- Implementation and review always use different fresh specialist subagents in
+  distinct sessions.
+- Every review uses a fresh detached worktree; revisions reuse the implementation
+  worktree and PR branch.
+- Validate every specialist subagent JSON report and cross-check its branch, worktree,
+  commit, and PR before advancing state.
+- Never advance from prose alone. Never merge, close issues, publish comments,
+  or create a non-draft PR without explicit human authority.
