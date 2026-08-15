@@ -7,20 +7,19 @@ description: Run a portfolio workflow -- triage candidate issues, select safe wo
 
 ## What this does
 
-This is the entry point for a workflow that validates all open issues and PRs in the current repository, and then implements the accepted ones by delegating to `delivery-orchestrator` subagents. 
+This is the entry point for a workflow that validates issues and PRs in the current repository, and then implements the accepted ones by delegating to `delivery-orchestrator` subagents. 
 
-The first step of the workflowis to decide **what to work on**, and then delegates the work to `delivery-orchestrator` subagents; it never writes code or merges pull requests.
+The first step of the workflow is to decide **what to work on**, and then delegate the work to `delivery-orchestrator` subagents; it never writes code or merges pull requests.
 
 ```text
-candidate issues → triage → select or defer → delivery runs → daily digest
+candidate issues → triage → select or defer → delivery runs → report
 ```
 
 `delivery-orchestrator` owns the execution of every selected issue.
 
 ## Before starting
 
-Derive the repository, default branch, instructions, checks, open PRs, open issues, active
-worktrees, and active runs. Ask once for any missing material choice:
+Derive the repository, default branch, instructions, checks, open PRs, open issues, active worktrees, and active runs. Ask once for any missing material choice:
 
 - candidate issue scope and accepted project brief;
 - selection threshold, concurrency limit, and daily budget;

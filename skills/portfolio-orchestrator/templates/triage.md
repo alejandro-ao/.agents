@@ -11,12 +11,7 @@ Project brief: {{brief_artifact}}
 Selection policy: {{policy_artifact}}
 Required report path: {{report_path}}
 
-Read the issue, repository instructions, relevant source/docs, related work, and
-recent changes. Do not edit code or GitHub state. Hard-gate duplicates, active
-work, misalignment, unclear/untestable scope, unresolved product decisions,
-repository-policy conflicts, and sensitive work. Score each factor from 0–100
-with evidence, calculate the weighted score from the supplied weights, and write
-exactly one JSON report to the required path.
+Read the issue, repository instructions, relevant source/docs, related work, and recent changes. Do not edit code or GitHub state. Hard-gate duplicates, active work, misalignment, unclear/untestable scope, unresolved product decisions, repository-policy conflicts, and sensitive work. Score each factor from 0–100 with evidence, calculate the weighted score from the supplied weights, and write exactly one JSON report to the required path.
 
 {
   "status": "completed|blocked|needs_decision|failed",
