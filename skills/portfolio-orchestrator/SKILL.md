@@ -27,6 +27,35 @@ Derive the repository, default branch, instructions, checks, open PRs, open issu
 
 Default policy: one low-risk issue, draft PRs only, and no merge, issue comments,
 
+## Run directory and report paths
+
+Before launching any specialist subagent, create one collision-resistant portfolio
+run directory outside project worktrees: `~/.agents/runs/<portfolio-run-id>/`.
+
+```text
+<portfolio-run>/
+  config.json                 accepted policy and repository facts
+  brief.md                    accepted project brief
+  issues/<issue-id>.json      immutable issue snapshots
+  triage/<issue-id>.json      triage specialist subagent reports
+  handoffs/<issue-id>.json    validated delivery handoffs
+  delivery/<issue-id>.json    delivery-run summary and artifact link
+  transitions.jsonl           append-only portfolio decisions
+  daily-digest.md
+```
+
+Use the issue number as `<issue-id>` when available, for example `issue-42`.
+Otherwise derive a stable, filesystem-safe identifier before launch. For every
+candidate, write its snapshot first, then pass these absolute paths into
+`templates/triage.md`:
+
+- `{{issue_artifact}}`: `issues/<issue-id>.json`
+- `{{report_path}}`: `triage/<issue-id>.json`
+
+When the triage specialist subagent finishes, validate that exact report before
+selection. A selected issue's handoff must be written to
+`handoffs/<issue-id>.json`; do not reuse a report path across issues or runs.
+
 ## Workflow
 
 1. **Triage each candidate** using `templates/triage.md` in a fresh, read-only
@@ -38,8 +67,8 @@ Default policy: one low-risk issue, draft PRs only, and no merge, issue comments
 3. **Select** only issues that pass every gate, meet the threshold, and fit the
    approved concurrency and budget. Rank by score, user value, lower risk, then
    lower effort. Never select work merely to fill capacity.
-4. **Write `handoff.json`** with `templates/handoff.md`, validate it, then start
-   one `delivery-orchestrator` run per selected issue.
+4. **Write the per-issue handoff** with `templates/handoff.md`, validate it, then
+   start one `delivery-orchestrator` run per selected issue.
 5. **Collect evidence** from validated delivery reports and current PR state.
 6. **Write the digest** with `templates/daily-digest.md`.
 
@@ -51,10 +80,8 @@ Default policy: one low-risk issue, draft PRs only, and no merge, issue comments
 | Validated selected triage report | `handoff.json` for delivery |
 | Delivery, verification, review, and PR evidence | Timestamped daily digest |
 
-Keep all artifacts in a portfolio run directory: accepted configuration and
-brief, issue snapshots, triage reports, handoffs, delivery summaries, transition
-log, and digest. Retry only safe discovery. On missing evidence, ambiguity,
-conflict, or sensitivity, defer and state the smallest needed human decision.
+Retry only safe discovery. On missing evidence, ambiguity, conflict, or
+sensitivity, defer and state the smallest needed human decision.
 
 ## When a PR is “ready”
 
