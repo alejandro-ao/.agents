@@ -11,8 +11,15 @@ This is the entry point for a workflow that validates issues and PRs in the curr
 
 The first step of the workflow is to decide **what to work on**, and then delegate the work to `delivery-orchestrator` subagents; it never writes code or merges pull requests.
 
-```text
-candidate issues → triage → select or defer → delivery runs → report
+```mermaid
+flowchart LR
+  A["Candidate issues"] --> B["Triage specialist subagents"]
+  B --> C{"Select?"}
+  C -->|"defer"| D["Deferred with reason"]
+  C -->|"approve"| E["Validated handoff"]
+  E --> F["Delivery orchestrator"]
+  F --> G["Validated delivery evidence"]
+  G --> H["Daily owner digest"]
 ```
 
 `delivery-orchestrator` owns the execution of every selected issue.

@@ -11,10 +11,16 @@ This skill owns **one approved issue**. It accepts a validated `handoff.json`
 from `portfolio-orchestrator`, creates a draft PR, and stops for human merge
 approval. It does not re-rank backlog issues or merge.
 
-```text
-approved handoff → implement → verify → independent review
-                                      ↘ revise → verify → review
-                                              → await approval → stop
+```mermaid
+flowchart LR
+  A["Approved handoff"] --> B["Implementation"]
+  B --> C["Verification"]
+  C -->|"passes"| D["Independent review"]
+  C -->|"fails"| E["Revision"]
+  D -->|"findings"| E
+  E --> C
+  D -->|"approved"| F["Await human approval"]
+  F --> G["Completed unmerged"]
 ```
 
 ## Start gate
