@@ -24,6 +24,21 @@ acceptance criteria are unchanged and testable, instructions and checks are
 available, and no newly discovered conflict or sensitive area exists. Otherwise
 block for a human decision; never silently broaden scope.
 
+## Runtime delegation
+
+For each implementation, review, or revision specialist subagent, prefer the
+environment's built-in subagent/worker tool and launch it in a fresh session.
+If it is unavailable but `tau` and `tmux` are available, render the assignment
+to `prompts/<assignment>.txt` and launch a fresh non-interactive Tau session in
+a uniquely named detached tmux session with `tau --print --new-session
+--session-id <id> --cwd <cwd>`. Save stdout and exit status under `processes/`.
+If neither runtime is available, block before delegation.
+
+Record each specialist subagent's role, runtime, session ID, prompt path, report
+path, start time, and terminal outcome. Poll at bounded intervals, never send
+interactive keystrokes, preserve logs on timeout, and stop only the named tmux
+session. A missing or invalid report is failure; do not infer success from prose.
+
 ## Workflow
 
 1. Initialize the run state and artifacts.
@@ -44,7 +59,7 @@ block for a human decision; never silently broaden scope.
   state.json              current workflow state
   transitions.jsonl       append-only transition history
   assignments.jsonl       specialist subagent launches and outcomes
-  prompts/ reports/ verification/ final-report.md
+  prompts/ processes/ reports/ verification/ final-report.md
 ```
 
 Use `scripts/transition-state.mjs`—never an editor—to initialize or change

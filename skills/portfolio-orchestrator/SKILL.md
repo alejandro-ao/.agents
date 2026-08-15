@@ -17,6 +17,22 @@ candidate issues → triage → select or defer → delivery runs → report
 
 `delivery-orchestrator` owns the execution of every selected issue.
 
+## Runtime delegation
+
+For every specialist subagent, choose the first available runtime:
+
+1. **Native delegation:** use the environment's built-in subagent/worker tool to launch a fresh specialist subagent in a new session.
+2. **Non-interactive fallback:** if native delegation is unavailable but your own interactive runtime and `tmux` are available, render the assignment to `prompts/<assignment>.txt`, then launch a fresh non-interactive agent session in a uniquely named detached tmux session. For example, for Tau, use `tau --print --new-session --session-id <id> --cwd <cwd>` and save stdout and the exit status under `processes/`. Other supported runtimes (e.g., pi, OpenCode, etc.) may have different command-line flags. Invesetigate and implement the correct flags for the runtime you are using. 
+
+3. **Otherwise:** block before starting the workflow and report that no supported
+   delegation runtime is available.
+
+Record the specialist subagent role, runtime, session ID, prompt path, start
+time, report path, and terminal outcome. Poll at bounded intervals; never send
+interactive keystrokes. On timeout, preserve logs and stop only that named tmux
+session—never the tmux server. Treat a missing or invalid report as failure, not
+as success inferred from output prose.
+
 ## Before starting
 
 Derive the repository, default branch, instructions, checks, open PRs, open issues, active worktrees, and active runs. Ask once for any missing material choice:
@@ -40,6 +56,7 @@ run directory outside project worktrees: `~/.agents/runs/<portfolio-run-id>/`.
   triage/<issue-id>.json      triage specialist subagent reports
   handoffs/<issue-id>.json    validated delivery handoffs
   delivery/<issue-id>.json    delivery-run summary and artifact link
+  prompts/ processes/         rendered assignments and runtime logs
   transitions.jsonl           append-only portfolio decisions
   daily-digest.md
 ```
