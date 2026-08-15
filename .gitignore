@@ -1,4 +1,5 @@
 worktrees/
+runs/
 
 .env
 .env-local
