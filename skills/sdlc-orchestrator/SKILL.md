@@ -1,136 +1,246 @@
 ---
 name: sdlc-orchestrator
-description: Coordinate automated issue scoring, isolated implementation, verification, independent review, and human-approved merge across GitHub issues, worktrees, coding agents, and pull requests.
+description: Coordinate issue triage, isolated implementation, verification, independent review, revision, and human-approved delivery using fresh specialist agents and durable run evidence.
 ---
 
 # SDLC Orchestrator
 
-Coordinate a safe issue-to-PR workflow. The orchestrator manages state, policy,
-and evidence; specialists perform bounded triage, implementation, and review.
-Issue selection may be automated. **Every merge requires explicit human approval
-for that specific PR.**
+Coordinate a safe issue-to-PR workflow. The orchestrator owns policy, state,
+verification, and handoffs. Fresh specialists perform triage, implementation,
+revision, and review. **Every merge requires explicit human approval naming the
+specific PR.**
 
-## Principles
+## Operating principles
 
-1. Project intent outranks issue wording. Assess issues against the project
-   brief, source, current priorities, architecture, and recent changes.
-2. Select work with a documented, reproducible score—not intuition alone.
-3. One issue gets one branch, worktree, worker, and mutable run record.
-4. Tests, checks, diff inspection, and independent review control transitions.
-5. Never merge, close issues, or publish issue comments without explicit policy;
-   never merge without specific human approval.
-6. Enforce limits for concurrency, time, cost, and review-fix cycles.
-7. Record decisions, evidence, artifacts, PRs, and terminal outcomes.
+1. Project intent outranks issue wording.
+2. Selection uses documented evidence and mechanical scoring.
+3. One issue gets one implementation branch and worktree. Each specialist round
+   gets a fresh agent session.
+4. The implementation agent never reviews its own work.
+5. Verification, diff inspection, and independent review control transitions.
+6. Never merge, close issues, publish issue comments, or broaden scope without
+   the applicable policy or human approval.
+7. Enforce concurrency, timeout, risk, and review-cycle limits.
+8. Persist exact assignments, evidence, decisions, and terminal outcomes.
+9. Report in product-owner language; retain technical evidence in artifacts.
 
-## Required configuration
+## Bundled assignment resources
 
-Do not guess missing required values. Report the run as blocked.
+Read the relevant file completely before rendering an assignment:
 
-```yaml
-project:
-  repository: owner/repository
-  default_branch: main
-  local_checkout: /absolute/path/to/checkout
-  brief: /absolute/path/to/project-brief.md
+- Triage: `templates/triage.md`
+- Initial implementation and worktree creation: `templates/implement.md`
+- Revision in the existing implementation worktree: `templates/revise.md`
+- Independent review and re-review: `templates/review.md`
+- Product-owner report: `templates/final-report.md`
 
-selection_policy:
-  acceptance_threshold: 75
-  max_selected_issues: 1
-  excluded_labels: ["wontfix", "security", "needs-design"]
-  max_risk_for_automation: low
-  weights:                         # must total 100
-    project_fit: 30
-    user_value: 20
-    clarity: 15
-    confidence: 15
-    risk_safety: 10
-    effort_efficiency: 10
+Resolve these paths relative to this `SKILL.md`. These templates are the complete
+specialist instructions; do not invoke external `worktree` or `review` skills.
+This avoids conflicting worktree rules and keeps the workflow versioned together.
 
-execution_policy:
-  runtime: project_default
-  reviewer_runtime: independent
-  max_concurrent_issues: 1
-  max_review_fix_cycles: 2
-  timeout_per_issue_minutes: 90
-  draft_pr_only: true
+## 1. Establish configuration
 
-verification:
-  required_commands: []
-  required_status_checks: []
+### A persistent SDLC configuration file is optional
+
+A user-authored `.agents/sdlc.yaml` is not required. Persistent profiles are
+useful only for repeated unattended runs because they avoid asking the same
+policy questions and prevent policy drift across operators. The authoritative
+configuration for every execution is instead a generated, immutable
+`config.json` inside that run's artifact directory.
+
+The run snapshot is required because it records what the agents actually used:
+target repository and issue scope, accepted project brief, scoring weights,
+automation limits, required checks, and human answers. This makes a run
+reproducible without forcing the product owner to maintain YAML.
+
+If an optional profile exists at `<checkout>/.agents/sdlc.yaml` or
+`~/.agents/sdlc/<owner>-<repository>.yaml`, load it as questionnaire defaults,
+not as permission to merge. Record its absolute path and hash in `config.json`.
+
+### Derive safe facts
+
+Derive and show, rather than ask for:
+
+- repository owner/name, checkout, remote, and default branch;
+- repository instructions and likely project-brief documents;
+- available test/lint/type/documentation commands from project guidance and CI;
+- `tau`/tmux availability and skill/template paths;
+- issue or PR named in the invocation;
+- current conflicting branches, worktrees, runs, issues, and PRs.
+
+Never derive product intent, acceptance of a synthesized brief, risk overrides,
+or permission to merge.
+
+### One bundled questionnaire
+
+When the invocation or optional profile does not answer the following, ask once
+at the start and wait. Keep the question concise and pre-fill discovered values:
+
+```markdown
+## SDLC run setup
+1. **Work scope:** Which issue(s) should this run assess? I found: <items>.
+2. **Project brief:** Use `<detected brief>`, or approve this synthesized brief?
+   - Purpose/users: <summary>
+   - Priorities/non-goals: <summary>
+   - Architecture/sensitive areas: <summary>
+   - Testing expectations: <summary>
+3. **Automation policy:** Use the standard safe policy below, or customize it?
+4. **Verification:** I discovered `<commands>`. Any required additions?
+5. **Delivery:** Draft PR only and stop for explicit merge approval. Confirm?
 ```
 
-The project brief must describe purpose, users, priorities, non-goals,
-architecture, testing expectations, and sensitive areas.
+The user may answer “use discovered values and standard safe policy.” Ask a
+follow-up only for a material ambiguity. If the brief is missing and the user
+does not approve a synthesized one, mark the run `blocked`. Never silently
+invent required configuration.
 
-## States
+### Standard safe policy
+
+Use these values only when accepted by the user or an optional profile:
+
+```json
+{
+  "selection_policy": {
+    "acceptance_threshold": 75,
+    "max_selected_issues": 1,
+    "excluded_labels": ["wontfix", "security", "needs-design"],
+    "max_risk_for_automation": "low",
+    "weights": {
+      "project_fit": 30,
+      "user_value": 20,
+      "clarity": 15,
+      "confidence": 15,
+      "risk_safety": 10,
+      "effort_efficiency": 10
+    }
+  },
+  "execution_policy": {
+    "max_concurrent_issues": 1,
+    "max_review_fix_cycles": 2,
+    "timeout_per_assignment_minutes": 90,
+    "draft_pr_only": true
+  }
+}
+```
+
+Weights must total 100. Security, authentication, billing, destructive data
+migration, production infrastructure, and legal/privacy work always require a
+human decision regardless of score.
+
+## 2. Initialize durable run artifacts
+
+Create a collision-resistant run ID and an absolute run directory outside the
+implementation worktree, for example `~/.agents/runs/<run-id>/`.
+
+Use this layout:
+
+```text
+<run>/
+  config.json                 immutable accepted configuration
+  brief.md                    accepted project brief
+  state.json                  current state and next action
+  transitions.jsonl           append-only timestamped transitions
+  assignments.jsonl           append-only launches and outcomes
+  prompts/                    fully rendered specialist prompts
+  reports/                    validated specialist JSON reports
+  processes/                  wrapper, stdout, exit status, timeout evidence
+  verification/               commands, exit codes, concise output
+  final-report.md
+```
+
+Every transition record must contain:
+
+```json
+{
+  "timestamp": "ISO-8601 UTC",
+  "issue": "number-or-url",
+  "from": "previous-state",
+  "to": "new-state",
+  "actor": "orchestrator-or-exact-session-id",
+  "evidence": ["absolute artifact path or remote URL"],
+  "decision": "concise reason",
+  "next_action": "one action"
+}
+```
+
+Append the transition and update `state.json` immediately. Do not reconstruct
+state only at the end.
+
+## 3. Preflight gate
+
+Before launching triage, verify and record:
+
+- accepted configuration and brief exist and use absolute artifact paths;
+- repository/default branch/remotes match configuration;
+- weights total 100 and limits are valid;
+- bundled templates resolve from this skill directory;
+- required commands and `tau` are available;
+- a native delegation tool is available, or both `tmux` and `tau` are available;
+- no conflicting active run, implementation branch/worktree, or PR exists;
+- run directory, timeout, concurrency, and session namespace are valid;
+- original checkout status is captured so concurrent unrelated changes can be
+  detected without modifying or attributing them to this run.
+
+Block on failure. Do not start a partial workflow.
+
+## 4. States
 
 ```text
 discovered → enriched → scored
 → selected | below_threshold | excluded | duplicate
 → implementing → verifying → reviewing
-→ revising (loops to implementing)
+→ revising → verifying → reviewing
 → awaiting_final_approval
 → merged | completed_unmerged | blocked | failed | cancelled
 ```
 
-Record timestamp, actor, score/evidence, and next action for each transition.
+## 5. Specialist delegation
 
-## Specialist delegation (mandatory)
+The orchestrator must not perform specialist work itself.
 
-The orchestrator coordinates specialists; it must not impersonate them. In
-particular, the agent that implements a change must never review its own work.
-A separate worktree alone is filesystem isolation, not an independent agent
-context.
+For triage, initial implementation, every revision, initial review, and every
+re-review:
 
-Use this runtime order for every implementation, revision, review, and
-re-review assignment:
+1. Render the matching bundled template with all placeholders resolved.
+2. Include repository, issue/PR, accepted scope, brief, criteria, constraints,
+   checks, exact candidate commit when applicable, report path, and run path.
+3. Launch a fresh agent context.
+4. Record role, ordinal, exact session/child ID, runtime, prompt path, candidate
+   commit, start time, and eventual outcome in `assignments.jsonl`.
+5. Validate the specialist's JSON report before changing state.
 
-1. If the active tool set includes a native subagent/delegation tool, use it to
-   launch a fresh agent context. Give implementation and revision agents the
-   `worktree` skill and review and re-review agents the `review` skill.
-2. Otherwise, if both `tmux` and `tau` are available, launch a fresh Tau print-mode
-   session in a uniquely named detached tmux session.
-3. If neither method is available, mark the run `blocked`. Do not perform the
-   specialist's work in the orchestrator context and do not describe a detached
-   worktree as an independent review.
+Never reuse an implementation session as a reviewer. Revisions use fresh agent
+sessions but the same implementation worktree/branch. Reviews use fresh detached
+review worktrees and never reuse an implementation or prior review worktree.
 
-Before launch, verify that the required specialist skill resolves from the
-specialist's working directory. For private skills that should not be committed
-with the repository, prefer user-level installation under
-`~/.agents/skills/<name>/SKILL.md` or `~/.tau/skills/<name>/SKILL.md` so every
-worktree can load the same skill. Do not rely on untracked project-local skills:
-a Git worktree contains only files from its commit. If the required skill cannot
-be resolved, block the assignment rather than running without it.
+### Why reports are separate JSON artifacts
 
-Each specialist prompt must be self-contained: identify the repository, issue or
-PR, accepted scope, project brief, acceptance criteria, constraints, required
-checks, output schema, and run-artifact path. Explicitly invoke the relevant
-skill, for example:
+Stdout is process logging, not a reliable API: Markdown fences may be malformed,
+output may be truncated, and status prose can be confused with evidence. Each
+specialist therefore writes one JSON report to a predetermined path under
+`reports/`. The orchestrator parses that file, validates required fields and
+enums, cross-checks commit/worktree/PR values, and advances only from validated
+data. Preserve stdout for diagnosis, but do not scrape YAML or JSON from it.
 
-```text
-/skill:worktree Implement issue #123 from this bounded brief: ...
-```
+If the report is missing or invalid, do not infer success from prose. Diagnose
+stdout/session evidence, then mark the assignment failed or safely retry a
+pre-agent launch failure.
 
-```text
-/skill:review Review PR #456 against issue #123 and this bounded brief: ...
-```
+### Runtime order
 
-For native delegation, record the tool call ID, child/session ID when available,
-runtime, prompt artifact, and final report. Do not reuse an implementation child
-as a reviewer. Consume the specialist's structured report by default; preserve
-raw process output and the durable child session for diagnosis, but do not load a
-full child transcript into the orchestrator context unless the assignment fails,
-the report is missing or invalid, evidence conflicts, or a human requests it.
+1. Prefer a native subagent/delegation tool when available.
+2. Otherwise use a fresh Tau print-mode session in a uniquely named detached
+   tmux session.
+3. If neither is available, mark the run `blocked`.
 
-### Tmux fallback
+For native delegation, record tool-call ID, child/session ID, runtime, prompt,
+and report. Consume the report by default; inspect a full child transcript only
+when the report fails validation, evidence conflicts, or the human requests it.
 
-Use artifact files rather than relying only on tmux scrollback. Before launch,
-generate a unique, file-safe Tau session ID (letters, numbers, `.`, `_`, and `-`;
-maximum 128 bytes), record it in the run state, and pass it through Tau's
-`--session-id` option. Tau atomically rejects collisions. Create a prompt file and
-a wrapper under the run directory; the wrapper starts that exact new Tau
-print-mode session, writes process output and exit status, and then exits. A
-representative wrapper is:
+### Required Tau/tmux launch protocol
+
+Generate the session ID in the orchestrator. Use only letters, numbers, `.`, `_`,
+and `-`, maximum 128 bytes. Use both `--new-session` and `--session-id`:
 
 ```bash
 #!/usr/bin/env bash
@@ -144,247 +254,156 @@ printf '%s\n' "$code" >"$STATUS_FILE"
 exit "$code"
 ```
 
-Generate `SPECIALIST_SESSION_ID` in the orchestrator, not inside the detached
-wrapper, so the expected child ID is durable even when startup fails. Use a
-collision-resistant value tied to the run and assignment, for example
-`tau-<run-id>-implement-<n>-<random-suffix>`.
-
-When launching multiple Tau fallback workers whose CWDs map to the same session
-index, serialize session initialization: launch one worker, wait until its exact
-session JSONL and index record both exist and the index parses successfully, then
-launch the next. Their agent work may overlap after registration. Treat malformed
-or missing index evidence as a startup failure; do not launch another worker into
-that session namespace until it is reconciled.
-
-Launch it with a collision-resistant name such as
-`tau-<run-id>-implement-<n>` or `tau-<run-id>-review-<n>`:
+Launch with a collision-resistant tmux name:
 
 ```bash
 tmux new-session -d -s "$TMUX_SESSION" "bash '$WRAPPER_FILE'"
 ```
 
-Poll at a bounded interval until the status file appears or the configured
-issue timeout expires. While it runs, use `tmux has-session` and optionally
-`tmux capture-pane -p -t "$TMUX_SESSION"` for progress; do not send keystrokes
-or treat partial output as completion. On completion, read the status file and
-structured report, validate the report, and confirm the recorded Tau session ID
-matches the assignment. Read raw process output or session JSONL only under the
-diagnostic conditions above. A missing tmux session without a status file is a
-specialist failure. On timeout, capture the final pane, terminate only that named
-tmux session, preserve all artifacts, and mark the assignment `failed` or
-`blocked`. Never use `tmux kill-server`.
+Immediately verify that the exact session JSONL exists, the matching index entry
+exists and parses, and its ID/CWD match the assignment. Serialize initialization
+for sessions sharing an index namespace. A malformed/missing index is a startup
+failure; do not launch another worker into that namespace until reconciled.
 
-Before review, prove independence in the run record: distinct agent/session ID,
-distinct tmux session when using the fallback, reviewer start after the candidate
-commit/PR exists, and no reuse of the implementer's conversation. If this evidence
-is absent, the review is not independent and cannot advance the run.
+Poll at bounded intervals. Do not send keystrokes or treat partial output as
+completion. On timeout, capture the pane, terminate only that named tmux session,
+preserve artifacts, and mark failed/blocked. Never use `tmux kill-server`.
+A missing tmux session without a status file is a launch or specialist failure.
 
-## 1. Establish the run
+A failure before the first agent turn is a launch attempt, not a specialist
+round. Record safe retries separately.
 
-Create a run ID and configuration snapshot. Verify the repository and default
-branch. Reconcile active runs, issues, and PRs so repeated scheduler or webhook
-events cannot duplicate work. Apply runtime and concurrency limits.
+## 6. Triage and selection
 
-## 2. Enrich and score issues
+Render `templates/triage.md` and delegate triage in a fresh session.
 
-Give a triage specialist the project brief, issue, relevant code/docs, related
-work, and recent changes. It must return:
-
-```yaml
-issue: <number-or-url>
-summary: <plain-language request>
-classification: bug | feature | enhancement | question | duplicate | other
-affected_areas: [<paths-or-components>]
-project_fit: aligned | uncertain | misaligned
-ambiguities: [<missing requirements or decisions>]
-related_work: [<issues, PRs, docs, or source areas>]
-risk: low | medium | high
-hard_gate: pass | fail
-hard_gate_reasons: [<reasons>]
-scores:                         # each 0-100
-  project_fit: <score>
-  user_value: <score>
-  clarity: <score>
-  confidence: <score>
-  risk_safety: <score>
-  effort_efficiency: <score>
-weighted_score: <0-100>
-score_evidence: [<specific facts supporting scores>]
-recommended_next_step: <one sentence>
-```
-
-Calculate the weighted score mechanically:
+Calculate independently and confirm:
 
 ```text
 weighted_score = Σ(factor_score × factor_weight) / 100
 ```
 
-Score consistently:
+Factors mean:
 
-- **Project fit:** alignment with the brief, priorities, and architecture.
-- **User value:** expected impact and breadth of benefit.
-- **Clarity:** completeness and testability of acceptance criteria.
-- **Confidence:** evidence that the problem and solution area are understood.
-- **Risk safety:** reversibility and low operational/security risk; higher is safer.
-- **Effort efficiency:** value relative to implementation and maintenance cost.
+- project fit: purpose, priority, architecture, and non-goal alignment;
+- user value: expected user impact and breadth;
+- clarity: complete, objective, testable criteria;
+- confidence: evidence that problem and solution area are understood;
+- risk safety: reversibility and low operational/security risk;
+- effort efficiency: value relative to implementation/maintenance cost.
 
-### Hard gates
+Hard-gate an issue when excluded by policy, excessive risk, duplicate/active
+work, misalignment, unresolved product/design decisions, sensitive scope,
+untestable criteria, or repository-policy conflict.
 
-Exclude an issue regardless of score when it:
+Select automatically only when the user-approved policy permits it, the hard
+gate passes, and the score meets the threshold. Rank eligible work by score,
+then user value, lower risk, and lower effort. Never manipulate scores to fill
+capacity. Do not close, relabel, or comment on unselected issues.
 
-- has an excluded label or exceeds `max_risk_for_automation`;
-- is duplicate, misaligned, or already has an active workflow;
-- requires unresolved product/design decisions or materially ambiguous scope;
-- affects security, authentication, billing, data migration, production
-  infrastructure, legal/privacy controls, or destructive operations;
-- cannot be tested with objective acceptance criteria;
-- conflicts with repository policy or the project brief.
+## 7. Initial implementation
 
-### Automatic selection
+Render `templates/implement.md` and launch a fresh implementation agent. It
+creates exactly one branch/worktree from the remote default branch, implements
+the bounded scope, runs checks, commits, pushes, and opens a draft PR.
 
-An issue is `selected` without human scope approval only when its hard gate
-passes and `weighted_score >= acceptance_threshold`. Rank eligible issues by
-score, then user value, lower risk, and lower effort. Select up to
-`max_selected_issues`.
+Pause on ambiguity rather than broadening scope. The orchestrator must not make
+implementation edits.
 
-Preserve the score breakdown and evidence in the run report. Do not manipulate
-scores to fill capacity. Mark other issues `below_threshold`, `excluded`, or
-`duplicate`; do not close, relabel, or comment on them automatically.
+## 8. Verification
 
-## 3. Implement in isolation
+In the implementation worktree, the orchestrator must:
 
-For each selected issue, delegate to a fresh implementation agent according to
-**Specialist delegation**. The prompt must invoke the `worktree` skill, which
-creates exactly one approved worktree and branch and opens the draft PR. Give it
-a self-contained brief containing accepted scope, objective acceptance criteria,
-project constraints, paths, required checks, and prohibitions on unrelated
-refactors or destructive actions. The orchestrator may verify and inspect the
-result, but must not make the implementation edits itself.
+- confirm branch, candidate commit, and draft PR match the report;
+- run all configured checks and record command, exit code, and concise output;
+- inspect the cumulative diff for scope creep, secrets, generated clutter,
+  lockfile churn, missing tests/docs, and project-brief conflicts;
+- inspect required remote status checks without claiming unrun checks passed;
+- summarize touched product and architecture areas for the final report.
 
-Require this report:
+A failure moves to `revising`; render `templates/revise.md` and delegate fixes to
+a fresh revision agent in the existing implementation worktree.
 
-```yaml
-status: completed | blocked | needs_decision | failed
-summary: <what changed and why>
-changed_files: [<paths>]
-acceptance_criteria:
-  - criterion: <criterion>
-    status: met | partial | unmet
-    evidence: <check, source location, or explanation>
-verification_run: [<commands and outcomes>]
-known_risks: [<risks>]
-needs_human_decision: <null or question>
-```
+## 9. Independent review and revision loop
 
-Pause rather than broadening scope when blocked or when a decision is needed.
+After verification passes, prove independence in the run record:
 
-## 4. Verify
+- reviewer session ID differs from every implementation/revision ID;
+- review worktree differs from implementation and previous review worktrees;
+- reviewer starts after the exact candidate commit exists;
+- implementer conversation is not reused.
 
-Run configured checks in the issue worktree and capture commands, exit codes,
-and concise output. Inspect the diff for scope creep, secrets, generated clutter,
-lockfile churn, missing tests, and conflicts with the project brief.
+Render `templates/review.md` and delegate review. Review overall score is the
+arithmetic mean of its six dimension scores. A score communicates quality but
+does not override findings: any blocking or important finding requires revision.
 
-Failed verification moves the issue to `revising` and is delegated as a fresh
-revision assignment to the implementation role; the orchestrator must not make
-the edits itself. Once verification passes, create or update a draft PR
-containing scope, score, implementation summary, check results, and known risks.
-Never claim an unrun check passed.
+For findings:
 
-## 5. Review independently
+1. Render `templates/revise.md`; launch a fresh revision agent in the existing
+   implementation worktree.
+2. Run full verification again.
+3. Render `templates/review.md`; launch a fresh independent re-review agent in a
+   fresh detached review worktree.
+4. Stop and mark `blocked` after `max_review_fix_cycles`.
 
-Delegate to a fresh reviewer agent according to **Specialist delegation** and
-explicitly invoke the `review` skill. Give it the issue, accepted scope, project
-brief, PR, candidate commit, diff, tests, and verification evidence. The reviewer
-must not share the implementer's agent/session context. The orchestrator must not
-supply its own review verdict. Require:
+Suggestions may remain only when explicitly documented as non-blocking.
 
-```yaml
-verdict: approved | findings | blocked
-findings:
-  - severity: blocking | important | suggestion
-    location: <file-and-line-or-component>
-    problem: <observed concern>
-    rationale: <why it matters>
-    requested_resolution: <testable action>
-remaining_risks: [<risks>]
-```
+## 10. Mandatory human merge approval
 
-Blocking and important findings return to implementation through a fresh
-revision assignment, followed by full verification and a fresh independent
-re-review assignment. Stop and mark `blocked` after `max_review_fix_cycles`;
-never retry indefinitely.
+When verification passes and no blocking/important findings remain, set
+`awaiting_final_approval`. Keep the PR draft unless policy explicitly permits
+marking it ready; never merge without explicit human approval naming that PR.
+Approval of the run, issue selection, another PR, or general automation is not
+merge approval.
 
-## 6. Mandatory human merge approval
+Requested changes return through revision, full verification, and fresh review,
+then require fresh approval. If the user does not approve merge, leave the PR
+open and use `awaiting_final_approval` or `completed_unmerged`.
 
-For work with passing verification and no unresolved blocking or important
-findings, set `awaiting_final_approval` and present:
+## 11. Final compliance audit
 
-```markdown
-## <Issue title>
-- Selection: <weighted score>/<threshold>; hard gates passed
-- Scope: <accepted scope>
-- Result: <implementation summary>
-- Changed areas: <files/components>
-- Verification: <commands and outcomes>
-- Review: <verdict and unresolved suggestions>
-- Risks/follow-up: <items or none>
-- Pull request: <link>
-- Recommended decision: approve merge | request changes | defer
-```
+Before producing the final report, mechanically verify:
 
-**Never merge without explicit human approval naming that PR.** Approval of the
-run, issue selection, another PR, or a general automation policy is insufficient.
-If approval is absent, leave the draft PR open and mark `completed_unmerged` or
-`awaiting_final_approval`. Route requested changes through implementation,
-verification, and review again before requesting fresh merge approval.
+- every assignment has an exact ID, prompt, start time, outcome, and report;
+- all required JSON reports parsed and cross-check against Git/PR state;
+- implementation/revision and review IDs are distinct;
+- every review used a fresh worktree and exact candidate commit;
+- all transitions have timestamps, actors, evidence, and next actions;
+- configured checks and required status checks have recorded outcomes;
+- review scores were calculated correctly and findings are resolved/classified;
+- implementation worktree, branch, commit, and PR are still available;
+- original-checkout anomalies are reported but not falsely attributed;
+- PR remains unmerged without explicit approval naming it;
+- launch failures, retries, timeouts, and human overrides are disclosed.
 
-## Failure and reporting
+A failed audit prevents a “ready” verdict; report the run as blocked or needing
+reconciliation.
 
-Retry only idempotent reads and safe writes. Preserve worktrees and artifacts on
-timeout or runtime failure. Reconcile remote state before retrying GitHub writes.
-Pause on repository conflicts or newly discovered ambiguity/sensitivity.
+## 12. Product-owner report
+
+Render `templates/final-report.md`, save it as `final-report.md`, and return it to
+the user. Keep it concise and easy to scan. It must include:
+
+- user-visible result and final verdict first;
+- application/architecture areas touched and important areas not touched;
+- issue and PR links;
+- exact implementation worktree path and short manual-validation guidance;
+- branch and candidate commit;
+- one-line summary of what each agent did, with exact session IDs;
+- selection score and every review round's dimension/overall scores;
+- verification/CI outcome, resolved findings, remaining risks, and gaps;
+- exact next human action and merge-approval status;
+- collapsed operational details, including run artifacts and round counts.
+
+Do not expose raw transcripts or overwhelm the product owner with orchestration
+mechanics. Keep detailed evidence in the run directory.
+
+## Failure policy
+
+Retry only idempotent reads and safe writes. Reconcile remote state before
+retrying GitHub writes. Preserve worktrees and artifacts on timeout or failure.
+Pause on conflicts, sensitivity, ambiguity, or newly discovered active work.
 
 Record every human override with timestamp, actor, exact instruction, affected
-stage or policy, and resulting risk. Repeat overrides in the final summary. A
-human override never constitutes merge approval unless it explicitly names the
-specific PR and approves its merge.
-
-Final reports must group work into selected/in progress, awaiting human merge
-approval, below threshold, excluded, blocked, and failed. State what completed,
-what evidence supports it, what needs a decision, and what happens next. Do not
-include or ingest raw agent transcripts unless requested or needed under the
-diagnostic conditions above.
-
-End every run with a concise execution summary that includes:
-
-- a plain-language description of the feature or fix and its user-visible result;
-- the delivered branch, candidate commit, worktree, and PR when available;
-- verification and final review outcome;
-- specialist rounds by role, separating initial implementation from revisions
-  and initial review from re-reviews;
-- each specialist assignment's role, ordinal, session/child ID, and outcome;
-- failed pre-agent launch attempts and safe retries, reported separately so they
-  are not counted as completed specialist rounds;
-- the terminal workflow state, remaining risks, human overrides, and next action.
-
-Count one specialist round for each fresh assignment that reached an agent turn.
-For example, one initial implementation plus two revisions is three
-implementation rounds; one initial review plus two re-reviews is three review
-rounds. A CLI/resource failure before the first agent turn is a launch attempt,
-not a specialist round.
-
-Use this compact shape:
-
-```markdown
-## Execution summary
-- Feature/fix: <plain-language description and result>
-- Delivery: <branch, commit, worktree, and PR or none>
-- Verification/review: <concise outcomes>
-- Specialist rounds: triage <n>; implementation <n> (initial <n>, revisions <n>);
-  review <n> (initial <n>, re-reviews <n>)
-- Assignments: <role/ordinal → session or child ID → outcome>
-- Launch failures/retries: <count and concise explanation or none>
-- Overrides: <items or none>
-- Final state: <state>; next action: <action>
-- Remaining risks: <items or none>
-```
+policy/stage, and resulting risk. An override never counts as merge approval
+unless it explicitly names and approves the specific PR.
