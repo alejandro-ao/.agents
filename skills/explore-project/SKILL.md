@@ -16,7 +16,17 @@ This skill guides you through creating comprehensive, beginner-friendly document
 
 ## The Approach
 
-### 1. Understand the Project Structure
+### 1. Ask Where to Generate the Documentation
+
+Before exploring or writing files, ask the user where the generated documentation should be located. Do not assume a directory.
+
+If the user already provided a location, use it without asking again. Otherwise, ask a direct question such as:
+
+> Where should I place the generated documentation? For example, `.exploration/`, `docs/`, or another path.
+
+Wait for the user's answer before creating documentation files. Treat the chosen path as `<docs-directory>` throughout this workflow.
+
+### 2. Understand the Project Structure
 
 Before creating docs, explore the codebase:
 
@@ -32,15 +42,15 @@ cat README.md
 ls -la
 ```
 
-### 2. Create Documentation Directory
+### 3. Create Documentation Directory
 
-Create an `.exploration/` directory in the project root:
+Create the user-selected documentation directory:
 
 ```bash
-mkdir -p .exploration
+mkdir -p <docs-directory>
 ```
 
-### 3. Determine What Documents to Create
+### 4. Determine What Documents to Create
 
 Based on project type and structure, create documents covering:
 
@@ -52,7 +62,7 @@ Based on project type and structure, create documents covering:
 | Library | API documentation, usage examples |
 | Full-stack | All above + deployment, configuration |
 
-### 4. Document Template Structure
+### 5. Document Template Structure
 
 Each document should follow this pattern:
 
@@ -92,7 +102,7 @@ Show real, working code snippets from the project.
 Link to related docs for further reading.
 ```
 
-### 5. The Step-by-Step Process
+### 6. The Step-by-Step Process
 
 #### Phase 1: Big Picture (First 2-3 Documents)
 
@@ -141,7 +151,7 @@ Link to related docs for further reading.
    - Debug techniques
    - Migration guides
 
-### 6. Cross-Reference Everything
+### 7. Cross-Reference Everything
 
 Create links between related documents:
 
@@ -151,7 +161,7 @@ Create links between related documents:
 - [API Reference](api.md) - For function details
 ```
 
-### 7. Update the README/Index
+### 8. Update the README/Index
 
 Add all new documents to an index:
 
@@ -215,7 +225,7 @@ For a typical project, create:
 ```
 project/
 ├── README.md          (points to docs)
-└── .exploration/
+└── <docs-directory>/
     ├── README.md      (index of all docs)
     ├── 01-architecture-overview.md
     ├── 02-entry-point.md

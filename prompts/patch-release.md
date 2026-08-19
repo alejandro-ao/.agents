@@ -1,7 +1,6 @@
 ---
 description: Publish a patch release of the current project
 ---
-
 Publish a new patch release of this project. Follow these steps:
 
 - Create a new PR preparing the release

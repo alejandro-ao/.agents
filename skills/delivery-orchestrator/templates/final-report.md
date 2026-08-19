@@ -8,7 +8,7 @@ include raw transcripts.
 # Delivery report — <issue title>
 
 ## Decision
-**<Ready for manual validation and merge approval | Changes required | Blocked>**
+**<Ready for manual validation and merge approval | Integrated into authorized umbrella branch | Changes required | Blocked>**
 
 <One or two sentences describing the user-visible result and final verdict.>
 
@@ -19,7 +19,8 @@ include raw transcripts.
 - **Issue:** <link>
 
 ## Delivery
-- **Pull request:** <link or none> (<draft/open state>)
+- **Pull request:** <link or none> (<draft/open/merged-to-integration state>)
+- **PR target / integration commit:** `<branch>` / `<commit or not integrated>`
 - **Implementation worktree:** `<absolute path or none>`
 - **Branch / commit:** `<branch>` / `<candidate commit>`
 - **How to validate manually:** <short steps or command>
@@ -42,8 +43,10 @@ include raw transcripts.
 - **Manual validation gaps:** <items or none>
 
 ## Next action
-<Exact human decision/action needed. If merge approval is needed, name the PR
-and state that it remains unmerged until explicit approval.>
+<Exact next action. In normal mode, if merge approval is needed, name the PR and
+state that it remains unmerged until explicit approval. In unattended integration
+mode, cite the standing authorization and resulting integration commit; state
+that the umbrella branch remains unmerged into the default branch.>
 
 <details>
 <summary>Run details</summary>

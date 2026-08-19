@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Portfolio validation — {{RUN_ID}}</title>
+  <style>
+    :root { color-scheme: light dark; --paper: #f6f3ee; --surface: #fffdfa; --ink: #292621; --muted: #726c63; --line: #d8d0c4; --accent: #9d3e27; --accent-soft: #f5e4dd; --good: #2f6b4f; --bad: #a83c32; --code: #eee9e1; }
+    @media (prefers-color-scheme: dark) { :root { --paper: #1c1b19; --surface: #272521; --ink: #f2eee8; --muted: #b9b1a5; --line: #4d4942; --accent: #f0a58f; --accent-soft: #432a23; --good: #8bc49e; --bad: #ffaaa1; --code: #211f1c; } }
+    * { box-sizing: border-box; }
+    body { max-width: 1040px; margin: 0 auto; padding: 58px 24px 72px; background: var(--paper); color: var(--ink); font: 15px/1.65 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    .page-header { max-width: 720px; padding-bottom: 30px; border-bottom: 3px solid var(--ink); }
+    .eyebrow, .field-label { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .eyebrow { margin: 0 0 12px; } h1, h2 { font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; letter-spacing: -.025em; } h1 { max-width: 600px; margin: 0; font-size: clamp(34px, 6vw, 52px); line-height: 1; } h2 { margin: 0; font-size: 21px; line-height: 1.2; } p { margin: 7px 0; } .muted { color: var(--muted); } code { padding: 2px 5px; background: var(--code); border-radius: 3px; font-size: .9em; }
+    .notice { max-width: 720px; margin: 26px 0 34px; padding: 0 0 0 16px; border-left: 3px solid var(--accent); color: var(--muted); }
+    .card, .response { background: var(--surface); border: 1px solid var(--line); box-shadow: 0 1px 0 rgb(0 0 0 / 3%); }
+    .card { position: relative; margin: 18px 0; padding: 27px 28px 25px; border-radius: 4px; }
+    .card::before { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--accent); content: ""; }
+    .card-header { display: flex; gap: 14px; align-items: start; justify-content: space-between; flex-wrap: wrap; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+    .title { margin: 0; max-width: 760px; } .pill { padding: 3px 7px; border: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+    .field { margin-top: 18px; } .field + .field { padding-top: 15px; border-top: 1px solid var(--line); } .field-label { display: block; margin-bottom: 5px; }
+    .decision-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 24px; }
+    .choice { display: flex; align-items: center; gap: 7px; min-height: 42px; padding: 8px 10px; border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 700; } .choice:hover { border-color: var(--accent); color: var(--ink); } .choice:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+    input[type="text"], textarea { width: 100%; margin-top: 10px; border: 1px solid var(--line); border-radius: 2px; padding: 10px 11px; background: transparent; color: inherit; font: inherit; } textarea { min-height: 76px; resize: vertical; } input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .owner-question { background: var(--code); } button { border: 0; border-radius: 2px; padding: 12px 16px; background: var(--ink); color: var(--surface); cursor: pointer; font: inherit; font-weight: 800; letter-spacing: .01em; } button:hover:not(:disabled) { background: var(--accent); } button:disabled { opacity: .45; cursor: not-allowed; }
+    .response { margin-top: 34px; padding: 26px 28px; border-radius: 4px; } .response h2 { margin-bottom: 6px; } pre { max-height: 300px; overflow: auto; margin: 16px 0; padding: 15px; border-left: 3px solid var(--line); background: var(--code); color: var(--muted); font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    .error { color: var(--bad); font-weight: 700; } .success { margin-left: 10px; color: var(--good); font-weight: 700; } a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    @media (max-width: 620px) { body { padding: 34px 15px 52px; } .card, .response { padding: 22px 18px; } .decision-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <p class="eyebrow">Maintainer review</p>
+    <h1>Portfolio validation</h1>
+    <p class="muted">Run <code id="run-id">{{RUN_ID}}</code> · generated {{GENERATED_AT}}</p>
+  </header>
+  <div class="notice">Review the proposed actions below. You can choose a decision or ask the item owner a question. Copy the generated response and paste it into the orchestrator conversation. Nothing is changed until the orchestrator validates a decision and records it.</div>
+
+  <!-- Replace {{ITEM_CARDS}} with escaped, reviewed cards. Each card follows:
+       <article class="card" data-decision-id="..." data-owner-id="..." data-item-type="issue|pull_request" data-item="...">
+         <div class="card-header"><h2 class="title">escaped title</h2><span class="pill">classification</span></div>
+         <div class="field">What it is, why it matters, benefits, tradeoffs, recommended scope, manual validation, and supporting evidence.</div>
+         <div class="decision-row">
+           <label class="choice"><input type="radio" name="decision-<id>" value="approved"> Approve</label>
+           <label class="choice"><input type="radio" name="decision-<id>" value="modified"> Modify</label>
+           <label class="choice"><input type="radio" name="decision-<id>" value="rejected"> Reject</label>
+           <label class="choice"><input type="radio" name="decision-<id>" value="deferred"> Defer</label>
+         </div>
+         <input class="final-approach" type="text" placeholder="Updated approach (required for Modify)">
+         <textarea class="reason" placeholder="Optional rationale"></textarea>
+         <textarea class="owner-question" placeholder="Question for this item's owner agent (optional)"></textarea>
+       </article>
+       Never inject unescaped text or inline script. -->
+  <main id="items">{{ITEM_CARDS}}</main>
+
+  <section class="response" aria-labelledby="response-heading">
+    <h2 id="response-heading">Copy response</h2>
+    <p class="muted">Cards with a selected decision or owner question are included. “Modify” requires an updated approach.</p>
+    <p id="validation" class="error" role="status"></p>
+    <pre id="output" aria-live="polite">Choose one or more decisions to generate a response.</pre>
+    <button id="copy" type="button" disabled>Copy validation response</button>
+    <span id="copy-status" class="success" role="status"></span>
+  </section>
+
+  <script>
+    (() => {
+      const items = [...document.querySelectorAll('.card[data-decision-id]')];
+      const output = document.querySelector('#output');
+      const validation = document.querySelector('#validation');
+      const copy = document.querySelector('#copy');
+      const copyStatus = document.querySelector('#copy-status');
+      const runId = document.querySelector('#run-id').textContent.trim();
+      let responseText = '';
+
+      function buildResponse() {
+        const responses = [];
+        const questions = [];
+        const errors = [];
+        for (const card of items) {
+          const selected = card.querySelector('input[type="radio"]:checked');
+          const finalApproach = card.querySelector('.final-approach').value.trim();
+          const reason = card.querySelector('.reason').value.trim();
+          const question = card.querySelector('.owner-question').value.trim();
+          if (selected && selected.value === 'modified' && !finalApproach) {
+            errors.push(`Add an updated approach for ${card.dataset.itemType} ${card.dataset.item}.`);
+          }
+          if (selected) {
+            responses.push({
+              decision_id: card.dataset.decisionId,
+              item_type: card.dataset.itemType,
+              item: card.dataset.item,
+              decision: selected.value,
+              final_approach: finalApproach,
+              reason
+            });
+          }
+          if (question) {
+            questions.push({
+              owner_id: card.dataset.ownerId,
+              decision_id: card.dataset.decisionId,
+              item_type: card.dataset.itemType,
+              item: card.dataset.item,
+              question
+            });
+          }
+        }
+        if (!responses.length && !questions.length && !errors.length) errors.push('Choose a decision or ask a question for at least one item.');
+        validation.textContent = errors.join(' ');
+        responseText = errors.length ? '' : JSON.stringify({ schema_version: 1, event: 'human_validation_response', run_id: runId, responses, questions }, null, 2);
+        output.textContent = responseText || 'Resolve the notes above to generate a response.';
+        copy.disabled = !responseText;
+        copyStatus.textContent = '';
+      }
+
+      document.addEventListener('change', buildResponse);
+      document.addEventListener('input', buildResponse);
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(responseText);
+        } catch (_) {
+          const textarea = document.createElement('textarea');
+          textarea.value = responseText;
+          textarea.style.position = 'fixed';
+          document.body.append(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          textarea.remove();
+        }
+        copyStatus.textContent = 'Copied.';
+      });
+      buildResponse();
+    })();
+  </script>
+</body>
+</html>

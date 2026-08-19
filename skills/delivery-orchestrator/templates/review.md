@@ -10,7 +10,10 @@ verdict rather than making edits.
 
 Repository: {{repository}}
 Original checkout (inspect only; never modify): {{checkout}}
-Default branch: {{default_branch}}
+Default branch (protected destination): {{default_branch}}
+PR target/base branch: {{pr_target_branch}}
+Expected base commit or integration ancestry: {{base_commit}}
+Delivery mode: {{delivery_mode}}
 Issue: {{issue_number_or_url}}
 Accepted scope and criteria: {{accepted_scope_and_criteria}}
 Project brief: {{brief_artifact}}
@@ -25,10 +28,10 @@ Required review worktree parent: {{review_worktree_parent}}
 
 Task:
 1. Inspect the original checkout read-only and resolve PR metadata.
-2. Fetch the base and exact PR commit. Create a new detached review worktree;
+2. Confirm the PR targets `{{pr_target_branch}}`, fetch that base and the exact PR commit, and create a new detached review worktree;
    never reuse an implementation or previous review worktree.
-3. Confirm HEAD equals the supplied candidate commit and review started after
-   that commit existed.
+3. Confirm HEAD equals the supplied candidate commit, it descends from the
+   supplied base commit, and review started after that commit existed.
 4. Review the complete diff against the issue, accepted scope, project brief,
    architecture, tests, docs, and repository policy.
 5. Run the required checks and focused probes. Do not modify production code.

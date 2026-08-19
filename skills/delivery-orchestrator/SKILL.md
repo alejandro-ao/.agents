@@ -1,6 +1,6 @@
 ---
 name: delivery-orchestrator
-description: Deliver one already-approved issue through an isolated worktree, verification, independent review, revision, and a draft pull request.
+description: Deliver one approved issue through an isolated worktree, verification, independent review, revision, and a draft PR, optionally for preauthorized umbrella-branch integration.
 ---
 
 # Delivery Orchestrator
@@ -8,8 +8,14 @@ description: Deliver one already-approved issue through an isolated worktree, ve
 ## What this does
 
 This skill owns **one approved issue**. It accepts a validated `handoff.json`
-from `portfolio-orchestrator`, creates a draft PR, and stops for human merge
-approval. It does not re-rank backlog issues or merge.
+from `portfolio-orchestrator`, creates a draft PR, and normally stops for human
+merge approval. It does not re-rank backlog issues.
+
+When the handoff carries a validated unattended-integration authorization, the
+PR targets the exact named non-default integration branch. After verification
+and independent review pass, the portfolio coordinator—not an implementation or
+review specialist—may integrate it under that standing authorization. This mode
+never authorizes a merge to the repository default branch.
 
 ```mermaid
 flowchart LR
@@ -19,8 +25,11 @@ flowchart LR
   C -->|"fails"| E["Revision"]
   D -->|"findings"| E
   E --> C
-  D -->|"approved"| F["Await human approval"]
-  F --> G["Completed unmerged"]
+  D -->|"approved"| F{"Delivery mode"}
+  F -->|"normal"| G["Await human approval"]
+  F -->|"preauthorized"| H["Coordinator integrates to umbrella"]
+  G --> I["Completed unmerged"]
+  H --> J["Integrated"]
 ```
 
 ## Start gate
@@ -29,6 +38,13 @@ Before implementation, confirm the issue is still unclaimed, scope and
 acceptance criteria are unchanged and testable, instructions and checks are
 available, and no newly discovered conflict or sensitive area exists. Otherwise
 block for a human decision; never silently broaden scope.
+
+For unattended integration, also validate the authorization artifact and its
+hash, require `base_branch == pr_target_branch == integration_branch`, require
+that branch to differ from the default branch, and prove the child scope maps to
+an accepted-plan section. Record the exact base commit. A missing/mismatched
+field disables unattended integration rather than falling back to an unsafe
+merge.
 
 ## Runtime delegation
 
@@ -83,18 +99,25 @@ the new state, and appends its audit record.
 | Revision validates | `revising → verifying` | revision report |
 | Review approves | `reviewing → awaiting_final_approval` | review report |
 | Human declines merge | `awaiting_final_approval → completed_unmerged` | final report |
+| Standing integration policy is validated and coordinator verifies merge | `awaiting_final_approval → integrated` | authorization, PR, merge commit, cumulative checks |
 
 `blocked`, `failed`, and `cancelled` are terminal exits from active stages.
-`merged` requires explicit approval naming the specific PR.
+`merged` into a default branch requires explicit approval naming the specific PR.
+`integrated` is distinct: it is allowed only for a verified merge into the exact
+preauthorized non-default integration branch.
 
 ## Non-negotiable rules
 
-- One issue gets one implementation branch and worktree.
+- One issue gets one implementation branch and worktree, based on the handoff's exact base branch/commit (the remote default branch in normal mode, or current integration branch in unattended mode).
 - Implementation and review always use different fresh specialist subagents in
   distinct sessions.
 - Every review uses a fresh detached worktree; revisions reuse the implementation
   worktree and PR branch.
 - Validate every specialist subagent JSON report and cross-check its branch, worktree,
   commit, and PR before advancing state.
-- Never advance from prose alone. Never merge, close issues, publish comments,
-  or create a non-draft PR without explicit human authority.
+- Never advance from prose alone. Never close issues, publish unrelated comments,
+  create a non-draft PR, or merge to the default branch without explicit human
+  authority. A validated standing authorization counts only for coordinator-owned
+  child integration into its exact non-default branch.
+- Implementation, revision, verification, and review specialists never merge.
+  The portfolio coordinator serializes and verifies authorized integrations.

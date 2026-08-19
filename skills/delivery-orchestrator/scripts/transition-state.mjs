@@ -11,14 +11,14 @@ const ACTIVE_STATES = new Set([
   "revising",
   "awaiting_final_approval",
 ]);
-const TERMINAL_STATES = new Set(["completed_unmerged", "merged", "blocked", "failed", "cancelled"]);
+const TERMINAL_STATES = new Set(["completed_unmerged", "integrated", "merged", "blocked", "failed", "cancelled"]);
 const ALLOWED = {
   approved: ["implementing", "blocked", "cancelled"],
   implementing: ["verifying", "blocked", "failed", "cancelled"],
   verifying: ["reviewing", "revising", "blocked", "failed", "cancelled"],
   reviewing: ["revising", "awaiting_final_approval", "blocked", "failed", "cancelled"],
   revising: ["verifying", "blocked", "failed", "cancelled"],
-  awaiting_final_approval: ["completed_unmerged", "merged", "blocked", "cancelled"],
+  awaiting_final_approval: ["completed_unmerged", "integrated", "merged", "blocked", "cancelled"],
 };
 
 function fail(message) {
@@ -105,14 +105,39 @@ async function transition(values) {
   if (values.to === "merged" && !/approved/i.test(values.decision)) {
     fail("A merged transition requires evidence of explicit human approval in --decision.");
   }
+  if (values.to === "integrated") {
+    requireArgs(values, ["authorization", "target_branch", "default_branch", "merge_commit"]);
+    if (values.target_branch === values.default_branch) {
+      fail("An integrated transition must target a non-default branch.");
+    }
+    if (values.evidence.length === 0) {
+      fail("An integrated transition requires verification evidence.");
+    }
+  }
   const timestamp = new Date().toISOString();
   const nextState = {
     ...state, status: values.to, updated_at: timestamp, actor: values.actor,
     decision: values.decision, next_action: values.next_action, evidence: values.evidence,
+    ...(values.to === "integrated" ? {
+      integration: {
+        authorization: values.authorization,
+        target_branch: values.target_branch,
+        default_branch: values.default_branch,
+        merge_commit: values.merge_commit,
+      },
+    } : {}),
   };
   const record = {
     timestamp, issue: state.issue, from: state.status, to: values.to, actor: values.actor,
     evidence: values.evidence, decision: values.decision, next_action: values.next_action,
+    ...(values.to === "integrated" ? {
+      integration: {
+        authorization: values.authorization,
+        target_branch: values.target_branch,
+        default_branch: values.default_branch,
+        merge_commit: values.merge_commit,
+      },
+    } : {}),
   };
   await atomicWrite(statePath, nextState);
   await appendFile(transitionsPath, `${JSON.stringify(record)}\n`, { encoding: "utf8", mode: 0o600 });
