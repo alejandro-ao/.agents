@@ -1,7 +1,7 @@
 ---
 description: Implement a feature in a local worktree without pushing or opening a PR.
 ---
-Implement this feature in a new local git worktree: {{ arguments }}
+Implement this feature in a new local git worktree: $ARGUMENTS
 
 - Fetch the latest default branch.
 - Create `~/.agents/worktrees/<repo-name>/<short-kebab-slug>/` (choose another slug if it exists).

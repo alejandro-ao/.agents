@@ -1,7 +1,7 @@
 ---
 description: Review a pull request in an isolated git worktree
 ---
-Review this pull request in an isolated worktree: {{ arguments }}
+Review this pull request in an isolated worktree: $ARGUMENTS
 
 - Inspect the original repository read-only: status, root, remotes, current/default branches. Never switch branches, modify files, install dependencies, or run destructive commands there.
 - Resolve the PR with `gh pr view`; record number, title, author, base/head branches, description, and changed files.

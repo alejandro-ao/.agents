@@ -1,7 +1,7 @@
 ---
 description: Merge a pull request through GitHub, then sync local main
 ---
-Merge the following pull request through GitHub and sync local `main`: {{ arguments }}
+Merge the following pull request through GitHub and sync local `main`: $ARGUMENTS
 
 Required workflow:
 

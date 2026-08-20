@@ -1,7 +1,7 @@
 ---
 description: Implement a feature in a worktree and open a PR to the default branch.
 ---
-Implement this feature in a new git worktree and open a draft PR: {{ arguments }}
+Implement this feature in a new git worktree and open a draft PR: $ARGUMENTS
 
 - Fetch the latest default branch. 
 - Create `~/.agents/worktrees/<repo-name>/<short-kebab-slug>/` (choose another slug if it exists)
