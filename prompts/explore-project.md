@@ -1,284 +1,120 @@
 ---
-description: Explore a codebase and create beginner-friendly, step-by-step documentation
+description: Explore a codebase and create beginner-friendly HTML documentation with useful visuals
 ---
 
-Explore the project and create comprehensive, beginner-friendly documentation. Project path, output directory, and additional preferences: $ARGUMENTS
+Explore the project and create comprehensive, beginner-friendly exploratory documentation as a single HTML document, not a series of Markdown files. Project path, output directory, and additional preferences: $ARGUMENTS
 
 Use the provided project path. If missing, ask which project to explore. Read its repository instructions before exploring. Resolve relative output paths against the project root.
 
-## The Approach
+## 1. Confirm the Output Location
 
-### 1. Ask Where to Generate the Documentation
+Before exploring or writing files, ask where the generated documentation should be located. Do not assume a directory. If the user already provided a location, use it without asking again.
 
-Before exploring or writing files, ask the user where the generated documentation should be located. Do not assume a directory.
+Example: "Where should I place the HTML documentation? For example, `.exploration/`, `docs/`, or another path."
 
-If the user already provided a location, use it without asking again. Otherwise, ask a direct question such as:
+Wait for the answer before creating documentation files. Treat the chosen path as `<docs-directory>`. Write the final document to `<docs-directory>/index.html`. Preserve unrelated files and existing documentation; do not overwrite user-authored content without approval.
 
-> Where should I place the generated documentation? For example, `.exploration/`, `docs/`, or another path.
+## 2. Understand the Project
 
-Wait for the user's answer before creating documentation files. Treat the chosen path as `<docs-directory>` throughout this workflow.
+- Inspect the directory structure, root README, package manifests, configuration, and repository instructions.
+- Trace real entry points, core abstractions, component interactions, and data flow through the source.
+- Read relevant tests and examples to verify behavior. Exclude dependencies, build output, vendor directories, and generated files from initial discovery.
+- Use file-reading tools for source inspection. Ground explanations in actual code and file paths.
+- Distinguish verified behavior from inference. Do not invent design rationale, APIs, measurements, or features.
 
-### 2. Understand the Project Structure
+## 3. Plan the Document
 
-Before creating docs, explore the codebase:
+Organize the HTML into a natural learning sequence with numbered sections and a linked table of contents:
 
-```bash
-# Find all source files and understand structure
-find . -type f -name "*.ts" -o -name "*.js" -o -name "*.py" | head -50
+### Big Picture
 
-# Read key files
-# Use the file-reading tool to read package.json, README.md, and other key files.
+1. **Architecture overview**: package/directory structure, component connections, and evidenced design decisions.
+2. **Entry point / startup flow**: initialization and configuration discovery.
+3. **Core concepts**: main abstractions, data structures, and interfaces.
 
-# Understand the architecture
-ls -la
-```
+### Deep Dives
 
-### 3. Create Documentation Directory
+4. **Major components**: responsibilities, key methods, and interactions.
+5. **Data flow**: state management, event/hook systems, and important execution paths.
+6. **Configuration**: settings, environment variables, and file formats.
 
-Create the user-selected documentation directory:
+### Reference
 
-```bash
-mkdir -p <docs-directory>
-```
+7. **API and usage reference**: real signatures, types, and runnable examples.
+8. **Troubleshooting**: evidenced issues, debugging techniques, and migrations where applicable.
 
-### 4. Determine What Documents to Create
+Adapt coverage to project size rather than forcing every section:
 
-Based on project type and structure, create documents covering:
+| Project Size | Suggested Major Sections | Focus |
+|--------------|--------------------------|-------|
+| Small (<10 source files) | 3-5 | Core concepts |
+| Medium (10-50 source files) | 5-8 | Architecture and key components |
+| Large (50+ source files) | 10-15 | Broad coverage with deep dives |
 
-| Project Type | Essential Documents |
-|--------------|---------------------|
-| Agent/AI project | Architecture overview, agent loop, tools, system prompt |
-| CLI application | CLI entry point, argument parsing, modes |
-| Web application | Architecture, routing, data flow |
-| Library | API documentation, usage examples |
-| Full-stack | All above + deployment, configuration |
+Project-specific topics:
+- **Agent/SDK**: agent loop, tools, system prompt construction, event hooks, and extensions where present.
+- **CLI**: entry point, argument parsing, commands, configuration, installation/uninstall.
+- **Web**: frontend/backend architecture, routing, state, API layer, deployment.
+- **Library**: public API, usage examples, integration patterns.
 
-### 5. Document Template Structure
+## 4. Write the HTML
 
-Each document should follow this pattern:
+Deliver a complete, polished HTML5 document that opens directly in a browser without a build step or server. Prefer a self-contained file with embedded CSS and inline SVG or embedded images; avoid network dependencies and CDN scripts.
 
-```markdown
-# [Document Title]
+- Include `<!doctype html>`, language, charset, viewport metadata, and a descriptive title.
+- Use semantic headings, navigation, main content, sections, tables, code blocks, and figures.
+- Provide a linked table of contents and stable section IDs; cross-reference related sections with fragment links rather than separate Markdown documents.
+- Use readable typography, constrained line lengths, clear spacing, responsive layouts, and print styles.
+- Make wide tables and code blocks usable on narrow screens. Escape source code correctly inside `<pre><code>`.
+- Include source file references and function/class names so readers can verify explanations.
+- Do not generate a parallel Markdown documentation series. Supporting local assets are acceptable when embedding is impractical; keep paths relative and include them in the delivery.
 
-Brief paragraph explaining what this document covers.
+Each substantive section should explain:
+1. What the component or concept is, why it exists, and how it fits into the system.
+2. Key functions/classes, important patterns, and file locations.
+3. Relevant visuals and real code examples.
+4. Related sections and source references.
 
-## Overview Section
-- What is this component
-- Why it exists
-- How it fits into the larger picture
+## 5. Include Useful Visuals
 
-## Technical Details
-- Key functions/classes
-- Important code patterns
-- File locations
+Include visuals, figures, diagrams, and plots wherever they improve understanding—not merely as decoration.
 
-## Flow Diagrams (ASCII)
-Use ASCII diagrams for visual clarity:
+- Use architecture diagrams for component boundaries and dependencies.
+- Use flowcharts or sequence diagrams for startup, agent loops, requests, and data movement.
+- Use state diagrams or timelines when transitions or ordering matter.
+- Use annotated figures to explain complex structures or interfaces when appropriate.
+- Use plots for meaningful quantitative information only when supported by actual project data or reproducible measurements. Label units, axes, legends, and data sources; never fabricate benchmark results. Mark illustrative data clearly and do not present it as measured evidence.
+- Prefer inline SVG for crisp, self-contained diagrams and plots. If using Mermaid or another renderer, embed the rendered output so the final document works offline without external scripts.
+- Wrap visuals in `<figure>` with descriptive captions. Provide text alternatives or accessible labels, readable contrast, and explanations that do not depend on color alone.
+- Keep labels legible at desktop and mobile sizes. Verify arrows, relationships, and plotted values against the source.
 
-    Input
-      ↓
-    Process
-      ↓
-    Output
+## 6. Validate Before Delivery
 
-## Code Examples
-Show real, working code snippets from the project.
+- Check HTML structure, unique section IDs, table-of-contents targets, internal links, and asset paths.
+- Verify source file references and examples against the codebase. Run safe, relevant example checks when feasible and report anything not checked.
+- Preview in a browser when available: inspect desktop/mobile layouts, code and tables, figures, and print rendering. Confirm visuals render without network access. Report if browser verification could not run.
+- Use available project validation tools without installing dependencies unnecessarily.
 
-## File Reference
-| File | Purpose |
-|------|---------|
-| file.ts | What it does |
+### Quality Checklist
 
-## Related Documents
-Link to related docs for further reading.
-```
+- [ ] One HTML document, not a Markdown series
+- [ ] Clear, beginner-friendly language; jargon explained
+- [ ] Architecture first, with "why" as well as "what"
+- [ ] Real source references and accurate code examples
+- [ ] Useful visuals, figures, diagrams, and plots where warranted
+- [ ] Captions, text alternatives, and readable visual labels
+- [ ] No invented APIs, rationale, or measurements
+- [ ] Working table of contents, cross-references, and local assets
+- [ ] Responsive, readable, offline-friendly presentation
+- [ ] Validation results reported honestly
 
-### 6. The Step-by-Step Process
+## Common Pitfalls
 
-#### Phase 1: Big Picture (First 2-3 Documents)
+- Do not over-explain obvious operations or merely copy code comments.
+- Do not skip the big picture or force irrelevant sections onto small projects.
+- Do not use placeholder sections such as "This will be expanded later."
+- Do not add unrelated source changes, tests, or README edits solely to deliver the documentation. Add a README link only if requested.
 
-1. **Architecture Overview** (priority: highest)
-   - Package/directory structure
-   - How components connect
-   - Design decisions and why
+## Deliver
 
-2. **Entry Point / Startup Flow**
-   - How the application starts
-   - Key initialization steps
-   - Configuration discovery
-
-3. **Core Concepts**
-   - Main abstractions
-   - Data structures
-   - Key interfaces
-
-#### Phase 2: Deep Dives (Next 5-8 Documents)
-
-4. **Individual Components**
-   - For each major component:
-     - What it does
-     - Key methods
-     - How it interacts with others
-
-5. **Data Flow**
-   - How data moves through the system
-   - State management
-   - Event/hook systems
-
-6. **Configuration**
-   - How settings are loaded
-   - Environment variables
-   - Config file formats
-
-#### Phase 3: Reference Material (Last 2-3 Documents)
-
-7. **API Reference**
-   - Function signatures
-   - Type definitions
-   - Usage examples
-
-8. **Troubleshooting**
-   - Common issues
-   - Debug techniques
-   - Migration guides
-
-### 7. Cross-Reference Everything
-
-Create links between related documents:
-
-```markdown
-## See Also
-- [Related Document](related-doc.md) - Brief description
-- [API Reference](api.md) - For function details
-```
-
-### 8. Update the README/Index
-
-Add all new documents to an index:
-
-```markdown
-## Document List
-
-| # | Document | Description |
-|---|----------|-------------|
-| 01 | [Title](01-title.md) | Brief description |
-```
-
-## Quality Checklist
-
-Before finishing, verify each document:
-
-- [ ] Clear, beginner-friendly language
-- [ ] No jargon without explanation
-- [ ] Real code examples from the project
-- [ ] ASCII diagrams for visual concepts
-- [ ] File paths match actual structure
-- [ ] Cross-references to related docs
-- [ ] Table of contents or index
-- [ ] "Why" explanations (not just "what")
-
-## Document Naming Convention
-
-Use numbered prefixes for ordering:
-
-```
-01-architecture-overview.md
-02-core-concepts.md
-03-component-a.md
-04-component-b.md
-...
-```
-
-Numbers allow natural reading order while being explicit.
-
-## Common Pitfalls to Avoid
-
-1. **Don't over-explain obvious things**
-   - Bad: "This function increments a counter by one"
-   - Good: "Increments the request counter"
-
-2. **Don't just copy code comments**
-   - Expand on "why" not just "what"
-   - Explain the context
-
-3. **Don't skip the architecture section**
-   - Readers need the big picture first
-   - Architecture docs are priority #1
-
-4. **Don't use placeholder text**
-   - Bad: "This section will be expanded later"
-   - Good: "This feature is under development - see GitHub for updates"
-
-## Example Output Structure
-
-For a typical project, create:
-
-```
-project/
-├── README.md          (points to docs)
-└── <docs-directory>/
-    ├── README.md      (index of all docs)
-    ├── 01-architecture-overview.md
-    ├── 02-entry-point.md
-    ├── 03-core-concepts.md
-    ├── 04-component-name.md
-    ├── 05-data-flow.md
-    ├── 06-configuration.md
-    ├── 07-api-reference.md
-    └── 08-troubleshooting.md
-```
-
-## Adapting to Project Size
-
-| Project Size | Document Count | Focus |
-|-------------|----------------|-------|
-| Small (<10 files) | 3-5 docs | Core concepts only |
-| Medium (10-50 files) | 5-8 docs | Architecture + key components |
-| Large (50+ files) | 10-15 docs | Full coverage with deep dives |
-
-## Special Cases
-
-### For Agent/SDK Projects
-
-Always include:
-- Architecture overview (packages, modules)
-- Agent loop explanation
-- Tool system
-- System prompt construction
-- Event hooks
-- Extension system
-
-### For CLI Tools
-
-Always include:
-- Entry point flow
-- Argument parsing
-- Commands/subcommands
-- Configuration files
-- Installation/uninstall
-
-### For Web Applications
-
-Always include:
-- Architecture (frontend/backend)
-- Routing
-- State management
-- API layer
-- Deployment
-
-## Next Steps After Documenting
-
-1. **Review with user**: Ask if anything is unclear
-2. **Add diagrams**: Use mermaid or ASCII for flowcharts
-3. **Create examples**: Real, runnable code samples
-4. **Write tests**: Document expected behaviors as tests
-
-## Remember
-
-Good documentation is:
-- **Beginner-friendly**: Explain concepts from scratch
-- **Comprehensive**: Cover everything important
-- **Accurate**: Code examples must work
-- **Maintained**: Update when code changes
-
-The goal is that a new developer can read the docs, understand the project, and start contributing.
+Report the HTML path, any supporting asset paths, coverage, and validation results. Ask whether any explanations need clarification. The goal is that a new developer can read the document, understand the project, and start contributing.
