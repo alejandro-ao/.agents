@@ -143,15 +143,6 @@
       "pluginName": "firecrawl",
       "installedAt": "2026-05-06T10:05:14.988Z",
       "updatedAt": "2026-05-14T13:30:33.256Z"
-    },
-    "explore-project": {
-      "source": "alejandro-ao/skills",
-      "sourceType": "github",
-      "sourceUrl": "https://github.com/alejandro-ao/skills.git",
-      "skillPath": "skills/explore-project/SKILL.md",
-      "skillFolderHash": "d2c663ec5e94b96103791f1cd11bed7255cf4ef2",
-      "installedAt": "2026-06-04T13:11:21.351Z",
-      "updatedAt": "2026-06-04T13:11:21.351Z"
     }
   },
   "dismissed": {

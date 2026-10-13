@@ -1,19 +1,10 @@
 ---
-name: explore-project
-disable-model-invocation: true
-description: Creates beginner-friendly, step-by-step documentation for a project. Use this skill when the user wants to understand, document, or explore an unfamiliar codebase. Triggers on phrases like "explore this project", "document this", "create docs", "what does this codebase do", "understand this project", or when starting work on a new project and needing to map it out.
+description: Explore a codebase and create beginner-friendly, step-by-step documentation
 ---
 
-# Create Documentation
+Explore the project and create comprehensive, beginner-friendly documentation. Project path, output directory, and additional preferences: $ARGUMENTS
 
-This skill guides you through creating comprehensive, beginner-friendly documentation for a codebase.
-
-## When to Use This Skill
-
-- User asks to "document this project" or "create documentation"
-- Starting work on a new project and user wants docs
-- User says "write the docs" or "generate documentation"
-- You're exploring a codebase and need to document it
+Use the provided project path. If missing, ask which project to explore. Read its repository instructions before exploring. Resolve relative output paths against the project root.
 
 ## The Approach
 
@@ -36,8 +27,7 @@ Before creating docs, explore the codebase:
 find . -type f -name "*.ts" -o -name "*.js" -o -name "*.py" | head -50
 
 # Read key files
-cat package.json
-cat README.md
+# Use the file-reading tool to read package.json, README.md, and other key files.
 
 # Understand the architecture
 ls -la
