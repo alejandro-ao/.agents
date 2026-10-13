@@ -22,15 +22,30 @@ Wait for the answer before creating documentation files. Treat the chosen path a
 - Use file-reading tools for source inspection. Ground explanations in actual code and file paths.
 - Distinguish verified behavior from inference. Do not invent design rationale, APIs, measurements, or features.
 
+## Required Explanation Style
+
+Use beginner-friendly explanations throughout every generated document, including deep dives, reference introductions, diagram labels, and troubleshooting. Do not satisfy this requirement only in the opening summary or delivery message.
+
+- Assume basic familiarity with the project's programming language, but no knowledge of its architecture, domain terms, or internal APIs.
+- Start with what the project does, who it is for, and a simple problem it solves. Explain related packages or products before comparing their internals.
+- Use plain language, short sentences, and reader-facing headings such as "How a request gets answered" rather than abstract labels alone.
+- Define each unfamiliar term before using it. Introduce the plain-language meaning first, then the exact code name: for example, "a saved step, called a checkpoint." Avoid dense noun phrases and unexplained acronyms.
+- Explain non-trivial behavior in this order: **problem → concrete example or short trace → solution**. State why the solution is necessary and what limits remain. Reuse a small running example when it helps connect sections.
+- Introduce one idea at a time. Explain responsibilities and observable behavior before method inventories, schemas, signatures, or implementation details.
+- Put a minimal complete example near the beginning. Explain prerequisites, where code goes, what each important step does, and the expected result. Label fragments and reference notation clearly; identify variables supplied by earlier examples. Do not present an unverified expected result as an observed result.
+- Keep advanced material comprehensive but clearly marked as optional or reference. Offer a first-reading path and feature-specific paths; do not make beginners memorize lookup tables to understand the basics.
+- Use concrete explanations for failure and recovery: what was saved, what happened next, what may repeat, and what the user or application must do. Explain safety caveats in plain language without weakening them.
+- Preserve exact API names, accurate source references, and important edge cases. Beginner-friendly means easier to understand, not less technically correct. Do not invent analogies that imply unsupported guarantees.
+
 ## 3. Plan the Document
 
-Organize the HTML into a natural learning sequence with numbered sections and a linked table of contents:
+Organize the HTML into a natural learning sequence with numbered sections and a linked table of contents. Lead with the practical problem and a small example; introduce vocabulary before relying on it:
 
 ### Big Picture
 
-1. **Architecture overview**: package/directory structure, component connections, and evidenced design decisions.
-2. **Entry point / startup flow**: initialization and configuration discovery.
-3. **Core concepts**: main abstractions, data structures, and interfaces.
+1. **What the project does**: the problem it solves, a concrete example, its relationship with neighboring packages/products, then the main components. Put detailed source maps in optional reference material.
+2. **First useful example**: a minimal complete usage example with prerequisites, setup steps, expected output, and limitations; explain actual initialization and configuration discovery.
+3. **Names readers will see**: plain-language definitions of core concepts, followed by their code names and a small example of how they work together.
 
 ### Deep Dives
 
@@ -70,10 +85,13 @@ Deliver a complete, polished HTML5 document that opens directly in a browser wit
 - Do not generate a parallel Markdown documentation series. Supporting local assets are acceptable when embedding is impractical; keep paths relative and include them in the delivery.
 
 Each substantive section should explain:
-1. What the component or concept is, why it exists, and how it fits into the system.
-2. Key functions/classes, important patterns, and file locations.
-3. Relevant visuals and real code examples.
-4. Related sections and source references.
+1. The practical question or problem, in plain language.
+2. A concrete example or short trace showing the behavior.
+3. How the component solves it, why it is needed, and its limitations.
+4. Relevant visuals and code examples with explanations and expected outcomes.
+5. Optional implementation/API reference, related sections, and source links.
+
+Do not lead a section with a dense implementation summary and expect the example or glossary later to make it understandable.
 
 ## 5. Include Useful Visuals
 
@@ -86,7 +104,7 @@ Include visuals, figures, diagrams, and plots wherever they improve understandin
 - Use plots for meaningful quantitative information only when supported by actual project data or reproducible measurements. Label units, axes, legends, and data sources; never fabricate benchmark results. Mark illustrative data clearly and do not present it as measured evidence.
 - Prefer inline SVG for crisp, self-contained diagrams and plots. If using Mermaid or another renderer, embed the rendered output so the final document works offline without external scripts.
 - Wrap visuals in `<figure>` with descriptive captions. Provide text alternatives or accessible labels, readable contrast, and explanations that do not depend on color alone.
-- Keep labels legible at desktop and mobile sizes. Verify arrows, relationships, and plotted values against the source.
+- Keep labels legible at desktop and mobile sizes. Use plain-language labels where possible, define necessary code names in the surrounding text, and explain how to follow each diagram. Verify arrows, relationships, and plotted values against the source.
 
 ## 6. Validate Before Delivery
 
@@ -94,12 +112,17 @@ Include visuals, figures, diagrams, and plots wherever they improve understandin
 - Verify source file references and examples against the codebase. Run safe, relevant example checks when feasible and report anything not checked.
 - Preview in a browser when available: inspect desktop/mobile layouts, code and tables, figures, and print rendering. Confirm visuals render without network access. Report if browser verification could not run.
 - Use available project validation tools without installing dependencies unnecessarily.
+- Review the document as a first-time reader: check that terms are defined before use, the opening example has enough setup to follow, advanced material is clearly marked, and explanations use concrete behavior rather than unexplained implementation language.
 
 ### Quality Checklist
 
 - [ ] One HTML document, not a Markdown series
-- [ ] Clear, beginner-friendly language; jargon explained
-- [ ] Architecture first, with "why" as well as "what"
+- [ ] Beginner-friendly explanations throughout, not just in the introduction
+- [ ] Unfamiliar terms defined before use; plain-language headings and diagram labels
+- [ ] Problem → concrete example/trace → solution for non-trivial behavior
+- [ ] Practical big picture first, with "why" as well as "what"
+- [ ] Minimal complete example near the beginning, with setup and expected results
+- [ ] Advanced/reference material clearly marked; easy first-reading path
 - [ ] Real source references and accurate code examples
 - [ ] Useful visuals, figures, diagrams, and plots where warranted
 - [ ] Captions, text alternatives, and readable visual labels
@@ -110,7 +133,9 @@ Include visuals, figures, diagrams, and plots wherever they improve understandin
 
 ## Common Pitfalls
 
-- Do not over-explain obvious operations or merely copy code comments.
+- Do not merely copy code comments or repeat boilerplate. Explain unfamiliar setup and multi-step behavior rather than assuming they are obvious.
+- Do not substitute words such as "kernel," "authority," or "convergence" for an explanation. Describe what actually happens, then introduce a technical term only when useful.
+- Do not simplify away failure modes, recovery limits, or distinctions between similar APIs.
 - Do not skip the big picture or force irrelevant sections onto small projects.
 - Do not use placeholder sections such as "This will be expanded later."
 - Do not add unrelated source changes, tests, or README edits solely to deliver the documentation. Add a README link only if requested.
